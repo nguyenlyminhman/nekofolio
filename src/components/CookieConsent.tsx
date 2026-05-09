@@ -3,30 +3,41 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Cookie, X } from "lucide-react";
+import { useChatStore } from "@/stores";
 
 const STORAGE_KEY = "cookie-consent-v1";
 const CHAT_FLAG_EVENT = "chatbot:opened";
 
 const CookieConsent = () => {
   const [visible, setVisible] = useState(false);
+    const initCookies = useChatStore((state) => state.initCookies);
 
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : "accepted";
-    if (stored) return;
+    // const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : "accepted";
+    // if (stored) return;
 
-    const t = setTimeout(() => setVisible(true), 1200);
+    // const t = setTimeout(() => setVisible(true), 1200);
 
-    const handleChatOpened = () => {
-      // If user engages with the chatbot first, dismiss the bar — disclaimer lives there.
-      localStorage.setItem(STORAGE_KEY, "acknowledged-via-chat");
-      setVisible(false);
-    };
-    window.addEventListener(CHAT_FLAG_EVENT, handleChatOpened);
+    // const handleChatOpened = () => {
+    //   // If user engages with the chatbot first, dismiss the bar — disclaimer lives there.
+    //   localStorage.setItem(STORAGE_KEY, "acknowledged-via-chat");
+    //   setVisible(false);
+    // };
+    // window.addEventListener(CHAT_FLAG_EVENT, handleChatOpened);
 
-    return () => {
-      clearTimeout(t);
-      window.removeEventListener(CHAT_FLAG_EVENT, handleChatOpened);
-    };
+    // return () => {
+    //   clearTimeout(t);
+    //   window.removeEventListener(CHAT_FLAG_EVENT, handleChatOpened);
+    // };
+    let mounted = true;
+
+    const bootstrap = async () => {
+      await initCookies();
+      if (!mounted) {
+        return;
+      }
+    }
+      void bootstrap();
   }, []);
 
   const accept = () => {
