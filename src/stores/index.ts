@@ -3,7 +3,6 @@
 import { create } from "zustand";
 
 import {
-  createChatStream,
   getChatHistory,
   initCookies as initCookiesApi,
 } from "@/services/chatchit";
@@ -14,10 +13,6 @@ type ChatState = {
   isStreaming: boolean;
   initCookies: () => Promise<void>;
   fetchHistory: () => Promise<void>;
-  startStream: () => void;
-  stopStream: () => void;
-  addMessage: (msg: Message) => void;
-  clearMessages: () => void;
 };
 
 let streamConnection: EventSource | null = null;
@@ -39,41 +34,5 @@ export const useChatStore = create<ChatState>((set, get) => ({
     await get().initCookies();
     const history = await getChatHistory();
     set({ messages: history });
-  },
-
-  startStream: () => {
-    if (streamConnection) {
-      return;
-    }
-
-    void get().initCookies().then(() => {
-      if (streamConnection) {
-        return;
-      }
-
-      streamConnection = createChatStream((incomingMessage) => {
-        get().addMessage(incomingMessage);
-      });
-
-      set({ isStreaming: true });
-    });
-  },
-
-  stopStream: () => {
-    if (!streamConnection) {
-      return;
-    }
-
-    streamConnection.close();
-    streamConnection = null;
-    set({ isStreaming: false });
-  },
-
-  addMessage: (msg) => {
-    set((state) => ({ messages: [...state.messages, msg] }));
-  },
-
-  clearMessages: () => {
-    set({ messages: [] });
   },
 }));

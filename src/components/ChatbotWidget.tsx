@@ -82,10 +82,18 @@ const ChatbotWidget = () => {
   const [hasGreeted, setHasGreeted] = useState(false);
   const [showPing, setShowPing] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
+  useEffect(() => {
+    const t = setTimeout(() => setOpen(true), 3200);
+  }, []);
 
+  useEffect(() => {
+    return () => closeSSE();
+  }, []);
 
   const closeSSE = () => {
     if (eventSourceRef.current) {
@@ -99,11 +107,9 @@ const ChatbotWidget = () => {
     );
   };
 
-  useEffect(() => {
-    return () => closeSSE();
-  }, []);
 
-  const [isTyping, setIsTyping] = useState(false); // Thêm state này
+
+  
 
   const startStreaming = (userQuery: string) => {
     if (isTyping) return; // Chống gửi tin nhắn khi đang stream
@@ -188,16 +194,6 @@ const ChatbotWidget = () => {
       ...prev,
       { ...msg, id: `${Date.now()}-${Math.random()}` },
     ]);
-  };
-
-  const handleQuickReply = (reply: (typeof quickReplies)[number]) => {
-    pushMessage({ role: "hr", content: `${reply.emoji} ${reply.label}` });
-    setTimeout(() => {
-      pushMessage({ role: "bot", content: reply.response });
-      if (reply.action === "link" && reply.href) {
-        window.open(reply.href, "_blank", "noopener,noreferrer");
-      }
-    }, 400);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
