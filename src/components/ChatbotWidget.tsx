@@ -11,68 +11,13 @@ type Message = {
   streaming?: boolean;
 };
 
-const BOT_NAME = "Manny";
-const RESUME_URL = "/resume.pdf";
-const CALENDLY_URL = "https://calendly.com/nguyenlyminhman";
+const BOT_NAME = "Manos";
 
-const quickReplies = [
-  {
-    id: "resume",
-    label: "View resume",
-    icon: FileText,
-    emoji: "📄",
-    action: "link" as const,
-    href: RESUME_URL,
-    response:
-      "Opening Mẫn's resume in a new tab. It covers 7+ years across fintech, banking systems, and AI-driven platforms.",
-  },
-  {
-    id: "meeting",
-    label: "Schedule a meeting",
-    icon: CalendarCheck,
-    emoji: "🤝",
-    action: "link" as const,
-    href: CALENDLY_URL,
-    response:
-      "Great — opening the booking page. Pick any 30-minute slot that works for you and Mẫn will confirm shortly.",
-  },
-  {
-    id: "stack",
-    label: "Tell me about the tech stack",
-    icon: Cpu,
-    emoji: "🛠️",
-    action: "reply" as const,
-    response:
-      "Core stack: Node.js, NestJS, Go, and Python on the backend; React, Next.js, and TypeScript on the frontend. Architecture leans on microservices, event-driven systems (Kafka, RabbitMQ), PostgreSQL/MongoDB, and Kubernetes on AWS/GCP. Lately also building with LLMs and MCP.",
-  },
-];
 
 const initialMessage: Message = {
   id: "welcome",
   role: "bot",
-  content: `Hi there! I'm ${BOT_NAME}, Mẫn's AI assistant. Need help finding something in his portfolio, or want to book a call?\n\nHeads up: this chat uses minimal cookies to remember our conversation — no personal data is shared.`,
-};
-
-// Component riêng để render nội dung bubble với cursor nhấp nháy
-const MessageContent = ({ content, streaming }: { content: string; streaming?: boolean }) => {
-  return (
-    <span style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-      {content}
-      {streaming && (
-        <span
-          style={{
-            display: "inline-block",
-            width: "2px",
-            height: "1em",
-            background: "currentColor",
-            marginLeft: "2px",
-            verticalAlign: "text-bottom",
-            animation: "blink 0.8s step-end infinite",
-          }}
-        />
-      )}
-    </span>
-  );
+  content: `Hi there! I'm ${BOT_NAME}, ManNguyen's AI assistant. Need help finding something in his portfolio, or want to book a call?\n\nHeads up: this chat uses minimal cookies to remember our conversation — no personal data is shared.`,
 };
 
 const ChatbotWidget = () => {
@@ -119,7 +64,7 @@ const ChatbotWidget = () => {
     handleSubmit(e);
     resetTextareaHeight();
   };
-// Ref cho textarea auto-resize
+  // Ref cho textarea auto-resize
 
   const closeSSE = () => {
     if (eventSourceRef.current) {
@@ -175,7 +120,8 @@ const ChatbotWidget = () => {
     };
 
     es.onerror = () => {
-      updateBotMessage(botMsgId, "Hình như đường truyền giữa chúng mình vừa có chút 'nấc cụt'. Bạn thử gửi lại tin nhắn giúp Manny nhé! ✨");
+      updateBotMessage(botMsgId, `Hình như đường truyền giữa chúng mình vừa có chút 'nấc cụt'. Bạn thử gửi lại tin nhắn giúp Manny nhé! ✨
+        \nLooks like our connection just had a little 'hiccup.' Could you please resend that message for Manny? ✨`);
       terminateStream();
     };
   };
@@ -187,9 +133,6 @@ const ChatbotWidget = () => {
   };
 
   const updateBotMessage = (id: string, content: string) => {
-    console.log("Updating message", { id, content });
-    
-    content = content.replace(/\n/g, "\n"); // Đảm bảo xuống dòng được hiển thị đúng
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, content } : m)));
   };
 

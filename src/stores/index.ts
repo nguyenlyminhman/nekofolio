@@ -15,7 +15,6 @@ type ChatState = {
   fetchHistory: () => Promise<void>;
 };
 
-let streamConnection: EventSource | null = null;
 let cookieInitPromise: Promise<void> | null = null;
 
 export const useChatStore = create<ChatState>((set, get) => ({
