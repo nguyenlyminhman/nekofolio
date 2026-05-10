@@ -88,12 +88,38 @@ const ChatbotWidget = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setOpen(true), 3200);
+    const t = setTimeout(() => setOpen(true), 3000);
   }, []);
 
   useEffect(() => {
     return () => closeSSE();
   }, []);
+
+  // Ref cho textarea auto-resize
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const resetTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  };
+
+  const autoResizeTextarea = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  };
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!input.trim() || isTyping) return;
+
+    handleSubmit(e);
+    resetTextareaHeight();
+  };
+// Ref cho textarea auto-resize
 
   const closeSSE = () => {
     if (eventSourceRef.current) {
@@ -106,10 +132,6 @@ const ChatbotWidget = () => {
       prev.map((m) => (m.streaming ? { ...m, streaming: false } : m))
     );
   };
-
-
-
-  
 
   const startStreaming = (userQuery: string) => {
     if (isTyping) return; // Chống gửi tin nhắn khi đang stream
@@ -165,6 +187,9 @@ const ChatbotWidget = () => {
   };
 
   const updateBotMessage = (id: string, content: string) => {
+    console.log("Updating message", { id, content });
+    
+    content = content.replace(/\n/g, "\n"); // Đảm bảo xuống dòng được hiển thị đúng
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, content } : m)));
   };
 
@@ -317,15 +342,17 @@ const ChatbotWidget = () => {
                       }`}
                   >
                     {/* Dùng Markdown để text hiện lên mượt và đúng định dạng */}
-                    <div className="prose prose-sm dark:prose-invert break-words">
-                      <ReactMarkdown>
-                        {m.content}
-                      </ReactMarkdown>
+                    <div className="prose prose-sm dark:prose-invert break-words whitespace-pre-line">
+                      {m.content}
                     </div>
 
-                    {/* Hiệu ứng con trỏ nhấp nháy khi đang stream */}
                     {isTyping && m.id.endsWith("-bot") && m.content === "" && (
-                      <span className="inline-block w-2 h-4 bg-primary/50 animate-pulse ml-1" />
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <span>Manny is typing</span>
+                        <span className="w-1 h-1 rounded-full bg-current animate-bounce" />
+                        <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:0.2s]" />
+                        <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:0.4s]" />
+                      </div>
                     )}
                   </div>
                 </motion.div>
@@ -334,29 +361,67 @@ const ChatbotWidget = () => {
 
             {/* Input */}
             <form
-              onSubmit={handleSubmit}
-              className="flex items-center gap-2 px-3 py-3 border-t"
-              style={{ borderColor: "hsl(var(--border))" }}
+              onSubmit={onSubmit}
+              className="
+                flex items-end gap-2
+                px-3 py-3
+                border-t
+                bg-background/80
+                backdrop-blur-sm
+              "
+              style={{
+                borderColor: "hsl(var(--border))",
+              }}
             >
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={isStreaming ? "Đang trả lời…" : "Ask me anything…"}
-                disabled={isStreaming}
-                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none px-2 disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || isTyping} // Disable khi đang typing
-                className="h-9 w-9 rounded-lg flex items-center justify-center text-primary-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ background: "hsl(var(--primary))" }}
+              <div
+                className="flex-1 flex items-end rounded-2xl border bg-background/40 transition-all focus-within:ring-1"
+                style={{
+                  borderColor: "hsl(var(--primary) / 0.35)",
+                  boxShadow: "0 0 12px hsl(var(--primary) / 0.08)",
+                }}
               >
-                {isTyping ? (
-                  <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Send size={15} strokeWidth={2} />
-                )}
-              </button>
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  rows={1}
+                  disabled={isStreaming}
+                  placeholder={isStreaming ? "Đang trả lời…" : "Ask me anything…"}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    autoResizeTextarea();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+
+                      if (!input.trim()) return;
+
+                      handleSubmit(e as any);
+
+                      setInput("");
+
+                      setTimeout(() => {
+                        resetTextareaHeight();
+                      }, 0);
+                    }
+                  }}
+                  className="flex-1 resize-none overflow-y-auto bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none px-4 py-3 min-h-[48px] max-h-40 disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isTyping}
+                  className="h-10 w-10 mb-2 mr-2 mt-2 shrink-0 rounded-xl flex items-center justify-center text-primary-foreground transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: "hsl(var(--primary))",
+                  }}
+                >
+                  {isTyping ? (
+                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Send size={16} strokeWidth={2} />
+                  )}
+                </button>
+              </div>
             </form>
           </motion.div>
         )}
