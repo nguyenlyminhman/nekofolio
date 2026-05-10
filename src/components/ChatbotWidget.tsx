@@ -3,6 +3,8 @@ import ReactMarkdown from "react-markdown"; // Import thêm cái này
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, X, Send, FileText, CalendarCheck, Cpu } from "lucide-react";
+import { useChatStore } from "@/stores";
+
 
 type Message = {
   id: string;
@@ -13,7 +15,6 @@ type Message = {
 
 const BOT_NAME = "Manos";
 
-
 const initialMessage: Message = {
   id: "welcome",
   role: "bot",
@@ -21,6 +22,9 @@ const initialMessage: Message = {
 };
 
 const ChatbotWidget = () => {
+  const fetchHistory = useChatStore((state) => state.fetchHistory);
+  const message = useChatStore((state) => state.messages);
+
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([initialMessage]);
   const [input, setInput] = useState("");
@@ -34,7 +38,25 @@ const ChatbotWidget = () => {
 
   useEffect(() => {
     const t = setTimeout(() => setOpen(true), 3000);
+
+    fetchHistory().catch(console.error);
+
+    return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (message.length === 0) return;
+
+    // Map Message từ store (role: "hr"|"bot") sang Message local widget
+    const historyMsgs: Message[] = message.map((m) => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+    }));
+
+    // Đặt lịch sử trước initialMessage chào hỏi
+    setMessages([initialMessage, ...historyMsgs]);
+  }, [message]);
 
   useEffect(() => {
     return () => closeSSE();
@@ -130,6 +152,8 @@ const ChatbotWidget = () => {
   const terminateStream = () => {
     closeSSE();
     setIsTyping(false);
+    // Sau khi bot trả lời xong, fetch lại để đồng bộ với server
+    fetchHistory().catch(console.error);
   };
 
   const updateBotMessage = (id: string, content: string) => {
