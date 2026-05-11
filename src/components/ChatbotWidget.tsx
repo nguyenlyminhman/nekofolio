@@ -35,6 +35,19 @@ const ChatbotWidget = () => {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const closeSSE = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    setIsStreaming(false);
+    // Xóa flag streaming khỏi message cuối
+    setMessages((prev) =>
+      prev.map((m) => (m.streaming ? { ...m, streaming: false } : m))
+    );
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setOpen(true), 3000);
@@ -62,9 +75,6 @@ const ChatbotWidget = () => {
     return () => closeSSE();
   }, []);
 
-  // Ref cho textarea auto-resize
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
   const resetTextareaHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -85,19 +95,6 @@ const ChatbotWidget = () => {
 
     handleSubmit(e);
     resetTextareaHeight();
-  };
-  // Ref cho textarea auto-resize
-
-  const closeSSE = () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-    setIsStreaming(false);
-    // Xóa flag streaming khỏi message cuối
-    setMessages((prev) =>
-      prev.map((m) => (m.streaming ? { ...m, streaming: false } : m))
-    );
   };
 
   const startStreaming = (userQuery: string) => {

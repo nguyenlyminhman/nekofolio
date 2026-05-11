@@ -17,6 +17,8 @@ type ChatState = {
 
 let cookieInitPromise: Promise<void> | null = null;
 
+export { useAuthStore } from "./auth-store";
+
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   isStreaming: false,
