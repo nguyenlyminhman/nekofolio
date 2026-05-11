@@ -1,18 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pencil, Plus } from "lucide-react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,25 +17,22 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { createRepo, deleteRepo, getRepo, listRepos, updateRepo } from "@/services/repoService";
-import type { RepoCreateInput, RepoDetail, RepoStatus, RepoSummary } from "@/types/repo";
+import { createRepoCms, fetchReposCms, updateRepoCms } from "@/services/repoService";
+import type { RepoCmsFormValues, RepoCmsRecord } from "@/types/repo";
 
-const emptyForm: RepoCreateInput = {
-  name: "",
+const emptyForm: RepoCmsFormValues = {
+  repoName: "",
+  highlights: "",
   description: "",
+  markdown: "",
+  githubUrl: "",
+  liveUrl: "",
   techStack: [],
-  link: "",
-  thumbnailUrl: "",
-  status: "active",
+  sortOrder: 0,
+  isActive: true,
 };
 
 function parseTechStack(raw: string): string[] {
@@ -55,27 +42,43 @@ function parseTechStack(raw: string): string[] {
     .filter(Boolean);
 }
 
+function recordToForm(r: RepoCmsRecord): RepoCmsFormValues {
+  return {
+    repoName: r.repoName,
+    highlights: r.highlights,
+    description: r.description,
+    markdown: r.markdown,
+    githubUrl: r.githubUrl,
+    liveUrl: r.liveUrl,
+    techStack: [...r.techStack],
+    sortOrder: r.sortOrder,
+    isActive: r.is_active,
+  };
+}
+
 export function RepoManager() {
   const { toast } = useToast();
-  const [repos, setRepos] = useState<RepoSummary[]>([]);
+  const [repos, setRepos] = useState<RepoCmsRecord[]>([]);
   const [listLoading, setListLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<RepoDetail | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
-  const [form, setForm] = useState<RepoCreateInput>(emptyForm);
+  /** Cố định id khi mở dialog sửa — không phụ thuộc `detail` lúc bấm Lưu. */
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<RepoCmsFormValues>(emptyForm);
   const [techRaw, setTechRaw] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const detail = useMemo(
+    () => (selectedId ? repos.find((r) => r.id === selectedId) ?? null : null),
+    [repos, selectedId],
+  );
 
   const refreshList = useCallback(async () => {
     setListLoading(true);
     try {
-      const list = await listRepos();
+      const list = await fetchReposCms();
       setRepos(list);
     } catch (e) {
       toast({
@@ -93,41 +96,15 @@ export function RepoManager() {
   }, [refreshList]);
 
   useEffect(() => {
-    if (!selectedId) {
-      setDetail(null);
-      return;
+    if (selectedId && !repos.some((r) => r.id === selectedId)) {
+      setSelectedId(null);
     }
-    let cancelled = false;
-    setDetailLoading(true);
-    void getRepo(selectedId)
-      .then((d) => {
-        if (!cancelled) {
-          setDetail(d);
-        }
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) {
-          toast({
-            variant: "destructive",
-            title: "Không tải chi tiết repo",
-            description: e instanceof Error ? e.message : "Lỗi không xác định",
-          });
-          setDetail(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setDetailLoading(false);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedId, toast]);
+  }, [repos, selectedId]);
 
   const openCreate = () => {
     setDialogMode("create");
-    setForm({ ...emptyForm, status: "active" });
+    setEditingId(null);
+    setForm({ ...emptyForm });
     setTechRaw("");
     setDialogOpen(true);
   };
@@ -137,45 +114,47 @@ export function RepoManager() {
       return;
     }
     setDialogMode("edit");
-    setForm({
-      name: detail.name,
-      description: detail.description,
-      techStack: detail.techStack,
-      link: detail.link,
-      thumbnailUrl: detail.thumbnailUrl ?? "",
-      status: detail.status,
-    });
+    setEditingId(detail.id);
+    setForm(recordToForm(detail));
     setTechRaw(detail.techStack.join(", "));
     setDialogOpen(true);
   };
 
   const submitDialog = async () => {
-    if (!form.name.trim()) {
-      toast({ variant: "destructive", title: "Nhập tên repo" });
+    if (!form.repoName.trim()) {
+      toast({ variant: "destructive", title: "Nhập repoName" });
       return;
     }
-    const payload: RepoCreateInput = {
+    const payload: RepoCmsFormValues = {
       ...form,
-      name: form.name.trim(),
+      repoName: form.repoName.trim(),
+      highlights: form.highlights.trim(),
       description: form.description.trim(),
-      link: form.link.trim(),
-      thumbnailUrl: form.thumbnailUrl?.trim() || undefined,
+      githubUrl: form.githubUrl.trim(),
+      liveUrl: form.liveUrl.trim(),
       techStack: parseTechStack(techRaw),
+      sortOrder: Number.isFinite(form.sortOrder) ? form.sortOrder : 0,
+      isActive: dialogMode === "edit" ? form.isActive : true,
     };
     setSaving(true);
     try {
       if (dialogMode === "create") {
-        const created = await createRepo(payload);
-        toast({ title: "Đã thêm repo" });
+        const created = await createRepoCms(payload);
+        toast({ title: "Đã tạo repo" });
+        setEditingId(null);
         setDialogOpen(false);
         await refreshList();
         setSelectedId(created.id);
-      } else if (detail) {
-        await updateRepo(detail.id, payload);
+      } else if (dialogMode === "edit") {
+        if (!editingId) {
+          toast({ variant: "destructive", title: "Thiếu id repo để cập nhật" });
+          return;
+        }
+        await updateRepoCms({ ...payload, id: editingId });
         toast({ title: "Đã cập nhật repo" });
+        setEditingId(null);
         setDialogOpen(false);
         await refreshList();
-        void getRepo(detail.id).then(setDetail);
       }
     } catch (e) {
       toast({
@@ -188,34 +167,20 @@ export function RepoManager() {
     }
   };
 
-  const confirmDelete = async () => {
-    if (!detail) {
-      return;
-    }
-    setDeleting(true);
-    try {
-      await deleteRepo(detail.id);
-      toast({ title: "Đã xóa repo" });
-      setDeleteOpen(false);
-      setSelectedId(null);
-      setDetail(null);
-      await refreshList();
-    } catch (e) {
-      toast({
-        variant: "destructive",
-        title: "Xóa thất bại",
-        description: e instanceof Error ? e.message : "Lỗi không xác định",
-      });
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Quản lý Repo</h1>
-        <p className="text-sm text-muted-foreground">Danh sách bên trái, chi tiết và thao tác bên phải.</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Quản lý Repo</h1>
+          <p className="text-sm text-muted-foreground">
+            <code className="rounded bg-muted px-1 text-xs">GET /cms/repo/fetch</code> — tạo:{" "}
+            <code className="rounded bg-muted px-1 text-xs">POST /cms/repo/create</code> — sửa:{" "}
+            <code className="rounded bg-muted px-1 text-xs">POST /cms/repo/update</code>.
+          </p>
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={() => void refreshList()} disabled={listLoading}>
+          {listLoading ? "Đang tải…" : "Tải lại"}
+        </Button>
       </div>
 
       <div className="grid min-h-[480px] gap-4 lg:grid-cols-[minmax(0,280px)_1fr]">
@@ -244,9 +209,9 @@ export function RepoManager() {
                           active ? "border-primary/50 bg-primary/10" : "border-transparent bg-muted/30"
                         }`}
                       >
-                        <span className="font-medium leading-tight">{r.name}</span>
-                        <Badge variant={r.status === "active" ? "default" : "secondary"} className="w-fit text-[10px]">
-                          {r.status === "active" ? "active" : "hidden"}
+                        <span className="font-medium leading-tight">{r.repoName || r.id}</span>
+                        <Badge variant={r.is_active ? "default" : "secondary"} className="w-fit text-[10px]">
+                          {r.is_active ? "active" : "inactive"}
                         </Badge>
                       </button>
                     </li>
@@ -263,36 +228,70 @@ export function RepoManager() {
               <CardTitle className="text-base">Chi tiết Repo</CardTitle>
               <CardDescription>
                 {!selectedId && "Chọn một repo trong danh sách."}
-                {selectedId && detailLoading && "Đang tải…"}
-                {selectedId && !detailLoading && !detail && "Không có dữ liệu."}
+                {selectedId && !detail && !listLoading && "Không tìm thấy trong danh sách."}
+                {selectedId && detail && "Dữ liệu từ fetch (cùng mục đã chọn)."}
               </CardDescription>
             </div>
-            {detail && !detailLoading && (
-              <div className="flex gap-2">
-                <Button type="button" size="sm" variant="secondary" className="gap-1" onClick={openEdit}>
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </Button>
-                <Button type="button" size="sm" variant="destructive" className="gap-1" onClick={() => setDeleteOpen(true)}>
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </Button>
-              </div>
+            {detail && (
+              <Button type="button" size="sm" variant="secondary" className="gap-1" onClick={openEdit}>
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
             )}
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
-            {detail && !detailLoading && (
+            {detail && (
               <>
                 <div>
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Tên</p>
-                  <p className="text-base font-semibold">{detail.name}</p>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">repoName</p>
+                  <p className="text-base font-semibold">{detail.repoName}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Mô tả</p>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">highlights</p>
+                  <p className="leading-relaxed text-muted-foreground">{detail.highlights || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">description</p>
                   <p className="leading-relaxed text-muted-foreground">{detail.description || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Tech stack</p>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">markdown</p>
+                  <pre className="mt-1 max-h-40 overflow-auto rounded-md border bg-muted/40 p-2 text-xs">{detail.markdown || "—"}</pre>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">githubUrl</p>
+                    {detail.githubUrl ? (
+                      <a
+                        href={detail.githubUrl}
+                        className="text-primary underline-offset-4 hover:underline"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {detail.githubUrl}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">liveUrl</p>
+                    {detail.liveUrl ? (
+                      <a
+                        href={detail.liveUrl}
+                        className="text-primary underline-offset-4 hover:underline"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {detail.liveUrl}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">techStack</p>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {detail.techStack?.length ? (
                       detail.techStack.map((t) => (
@@ -306,33 +305,23 @@ export function RepoManager() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Link</p>
-                  {detail.link ? (
-                    <a href={detail.link} className="text-primary underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
-                      {detail.link}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
+                  <p className="text-xs font-medium uppercase text-muted-foreground">sort_order</p>
+                  <p>{detail.sortOrder}</p>
+                </div>
+                <div className="flex flex-wrap gap-2 border-t pt-3 text-xs text-muted-foreground">
+                  <span>id: {detail.id}</span>
+                  <span>·</span>
+                  <span>created_at: {detail.created_at ?? "—"}</span>
+                  <span>·</span>
+                  <span>updated_at: {detail.updated_at ?? "—"}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground/80">created_by</span> {detail.created_by ?? "—"} ·{" "}
+                  <span className="font-medium text-foreground/80">updated_by</span> {detail.updated_by ?? "—"}
                 </div>
                 <div>
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Thumbnail</p>
-                  {detail.thumbnailUrl ? (
-                    <a
-                      href={detail.thumbnailUrl}
-                      className="break-all text-primary underline-offset-4 hover:underline"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {detail.thumbnailUrl}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Trạng thái</p>
-                  <Badge variant={detail.status === "active" ? "default" : "secondary"}>{detail.status}</Badge>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">is_active</p>
+                  <Badge variant={detail.is_active ? "default" : "secondary"}>{detail.is_active ? "true" : "false"}</Badge>
                 </div>
               </>
             )}
@@ -340,19 +329,42 @@ export function RepoManager() {
         </Card>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            setEditingId(null);
+          }
+        }}
+      >
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{dialogMode === "create" ? "Thêm repo mới" : "Chỉnh sửa repo"}</DialogTitle>
-            <DialogDescription>Điền thông tin và lưu. Tech stack: phân tách bằng dấu phẩy.</DialogDescription>
+            <DialogDescription>
+              Tech stack nhập cách nhau bằng dấu phẩy. Thêm mới → <code className="rounded bg-muted px-1 text-xs">POST …/create</code>
+              ; chỉnh sửa → <code className="rounded bg-muted px-1 text-xs">POST …/update</code> kèm <code className="text-xs">id</code>.
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="repo-name">Tên</Label>
-              <Input id="repo-name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+          <div className="grid gap-4 py-2 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="repo-repoName">repoName</Label>
+              <Input
+                id="repo-repoName"
+                value={form.repoName}
+                onChange={(e) => setForm((f) => ({ ...f, repoName: e.target.value }))}
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="repo-desc">Mô tả</Label>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="repo-highlights">highlights</Label>
+              <Input
+                id="repo-highlights"
+                value={form.highlights}
+                onChange={(e) => setForm((f) => ({ ...f, highlights: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="repo-desc">description</Label>
               <Textarea
                 id="repo-desc"
                 rows={3}
@@ -360,42 +372,58 @@ export function RepoManager() {
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               />
             </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="repo-md">markdown</Label>
+              <Textarea
+                id="repo-md"
+                rows={8}
+                className="font-mono text-xs"
+                spellCheck={false}
+                value={form.markdown}
+                onChange={(e) => setForm((f) => ({ ...f, markdown: e.target.value }))}
+              />
+            </div>
             <div className="space-y-2">
-              <Label htmlFor="repo-tech">Tech stack</Label>
+              <Label htmlFor="repo-gh">githubUrl</Label>
+              <Input id="repo-gh" value={form.githubUrl} onChange={(e) => setForm((f) => ({ ...f, githubUrl: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="repo-live">liveUrl</Label>
+              <Input id="repo-live" value={form.liveUrl} onChange={(e) => setForm((f) => ({ ...f, liveUrl: e.target.value }))} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="repo-tech">techStack</Label>
               <Input
                 id="repo-tech"
                 value={techRaw}
                 onChange={(e) => setTechRaw(e.target.value)}
-                placeholder="Next.js, TypeScript, PostgreSQL"
+                placeholder="Java, TypeScript, Next.js"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="repo-link">Link</Label>
-              <Input id="repo-link" value={form.link} onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="repo-thumb">Thumbnail URL</Label>
+              <Label htmlFor="repo-sort">sortOrder</Label>
               <Input
-                id="repo-thumb"
-                value={form.thumbnailUrl ?? ""}
-                onChange={(e) => setForm((f) => ({ ...f, thumbnailUrl: e.target.value }))}
+                id="repo-sort"
+                type="number"
+                value={Number.isFinite(form.sortOrder) ? form.sortOrder : 0}
+                onChange={(e) => setForm((f) => ({ ...f, sortOrder: Number(e.target.value) || 0 }))}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Trạng thái</Label>
-              <Select
-                value={form.status}
-                onValueChange={(v) => setForm((f) => ({ ...f, status: v as RepoStatus }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">active</SelectItem>
-                  <SelectItem value="hidden">hidden</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {dialogMode === "edit" && (
+              <div className="flex items-center justify-between gap-4 rounded-md border border-border px-3 py-3 sm:col-span-2">
+                <div className="space-y-0.5">
+                  <Label htmlFor="repo-is-active" className="text-base">
+                    isActive
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Trạng thái hiển thị / kích hoạt repo (gửi field isActive trong body).</p>
+                </div>
+                <Switch
+                  id="repo-is-active"
+                  checked={form.isActive}
+                  onCheckedChange={(checked) => setForm((f) => ({ ...f, isActive: checked }))}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
@@ -407,23 +435,6 @@ export function RepoManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Xóa repo?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Hành động này không thể hoàn tác{detail ? ` (“${detail.name}”).` : "."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void confirmDelete()} disabled={deleting}>
-              {deleting ? "Đang xóa…" : "Xóa"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
