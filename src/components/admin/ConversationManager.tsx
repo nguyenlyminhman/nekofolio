@@ -308,7 +308,9 @@ export function ConversationManager() {
                           className={`mt-0.5 h-4 w-4 shrink-0 ${
                             row.is_interesting === true
                               ? "fill-amber-400 text-amber-400"
-                              : "fill-muted-foreground/35 text-muted-foreground/50"
+                              : row.is_interesting === false
+                                ? "fill-emerald-500 text-emerald-500"
+                                : "fill-muted-foreground/35 text-muted-foreground/50"
                           }`}
                           aria-hidden
                         />
