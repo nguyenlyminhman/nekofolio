@@ -1,1 +1,1 @@
-export type AdminMenuId = "cv" | "repo";
+export type AdminMenuId = "cv" | "repo" | "conv";

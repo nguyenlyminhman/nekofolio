@@ -14,6 +14,7 @@ const MENU_ITEMS: {
 }[] = [
   { id: "cv", icon: "📄", label: "Quản lý CV" },
   { id: "repo", icon: "📁", label: "Quản lý Repo" },
+  { id: "conv", icon: "💬", label: "Quản hội thoại" },
 ];
 
 type SidebarProps = {
