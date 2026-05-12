@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Settings2 } from "lucide-react";
+import { Settings2, Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -300,12 +300,22 @@ export function ConversationManager() {
                       <button
                         type="button"
                         onClick={() => setSelectedConversationId(cid)}
-                        className={`w-full rounded-md border px-2 py-2 text-left text-sm transition-colors hover:bg-accent/60 ${
+                        className={`flex w-full gap-2 rounded-md border px-2 py-2 text-left text-sm transition-colors hover:bg-accent/60 ${
                           active ? "border-primary/50 bg-primary/10" : "border-transparent bg-muted/30"
                         }`}
                       >
-                        <span className="line-clamp-2 font-medium leading-tight">{listItemLabel(row)}</span>
-                        <span className="mt-1 block truncate text-[10px] text-muted-foreground">{cid}</span>
+                        <Star
+                          className={`mt-0.5 h-4 w-4 shrink-0 ${
+                            row.is_interesting === true
+                              ? "fill-amber-400 text-amber-400"
+                              : "fill-muted-foreground/35 text-muted-foreground/50"
+                          }`}
+                          aria-hidden
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="line-clamp-2 font-medium leading-tight">{listItemLabel(row)}</span>
+                          <span className="mt-1 block truncate text-[10px] text-muted-foreground">{cid}</span>
+                        </span>
                       </button>
                     </li>
                   );
