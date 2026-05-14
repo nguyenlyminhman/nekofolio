@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pencil, Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Pencil, Plus, RefreshCw, Upload } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { createRepoCms, fetchReposCms, updateRepoCms } from "@/services/repoService";
+import { createRepoCms, fetchReposCms, updateRepoCms, uploadRepoCms } from "@/services/repoService";
 import type { RepoCmsFormValues, RepoCmsRecord } from "@/types/repo";
 
 const emptyForm: RepoCmsFormValues = {
@@ -64,11 +64,14 @@ export function RepoManager() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
-  /** Cố định id khi mở dialog sửa — không phụ thuộc `detail` lúc bấm Lưu. */
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<RepoCmsFormValues>(emptyForm);
   const [techRaw, setTechRaw] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // ── Import JSON ──────────────────────────────────────────────
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const detail = useMemo(
     () => (selectedId ? repos.find((r) => r.id === selectedId) ?? null : null),
@@ -101,6 +104,8 @@ export function RepoManager() {
     }
   }, [repos, selectedId]);
 
+  // ── Handlers ─────────────────────────────────────────────────
+
   const openCreate = () => {
     setDialogMode("create");
     setEditingId(null);
@@ -110,14 +115,49 @@ export function RepoManager() {
   };
 
   const openEdit = () => {
-    if (!detail) {
-      return;
-    }
+    if (!detail) return;
     setDialogMode("edit");
     setEditingId(detail.id);
     setForm(recordToForm(detail));
     setTechRaw(detail.techStack.join(", "));
     setDialogOpen(true);
+  };
+
+  const openImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset ngay để có thể chọn lại cùng file
+    e.target.value = "";
+
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".json")) {
+      toast({ variant: "destructive", title: "Chỉ chấp nhận file .json" });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const imported = await uploadRepoCms(file);
+      toast({
+        title: "Import thành công",
+        description: `Đã import ${imported} repo.`,
+      });
+      await refreshList();
+      // Tự động chọn repo đầu tiên trong batch vừa import
+      if (imported[0]) setSelectedId(imported[0].id);
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Import thất bại",
+        description: e instanceof Error ? e.message : "Lỗi không xác định",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const submitDialog = async () => {
@@ -167,21 +207,188 @@ export function RepoManager() {
     }
   };
 
+  // ── Render ───────────────────────────────────────────────────
+
   return (
     <div className="space-y-6">
+      {/* Hidden file input cho Import JSON */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Quản lý Repo</h1>
           <p className="text-sm text-muted-foreground">
             <code className="rounded bg-muted px-1 text-xs">GET /cms/repo/fetch</code> — tạo:{" "}
             <code className="rounded bg-muted px-1 text-xs">POST /cms/repo/create</code> — sửa:{" "}
-            <code className="rounded bg-muted px-1 text-xs">POST /cms/repo/update</code>.
+            <code className="rounded bg-muted px-1 text-xs">POST /cms/repo/update</code> — import:{" "}
+            <code className="rounded bg-muted px-1 text-xs">POST /cms/repo/upload</code>.
           </p>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={() => void refreshList()} disabled={listLoading}>
-          {listLoading ? "Đang tải…" : "Tải lại"}
-        </Button>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-1"
+            onClick={openImport}
+            disabled={uploading}
+          >
+            <Upload className="h-4 w-4" />
+            {uploading ? "Đang import…" : "Import JSON"}
+          </Button>
+          <Button type="button" size="sm" className="gap-1" onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+            Thêm
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1"
+            onClick={() => void refreshList()}
+            disabled={listLoading}
+          >
+            <RefreshCw className={`h-4 w-4 ${listLoading ? "animate-spin" : ""}`} />
+            {listLoading ? "Đang tải…" : "Tải lại"}
+          </Button>
+        </div>
       </div>
+
+
+
+      <Dialog
+        open={dialogOpen}
+
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setEditingId(null);
+        }}
+      >
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {dialogMode === "create" ? "Thêm repo mới" : "Chỉnh sửa repo"}
+            </DialogTitle>
+            <DialogDescription>
+              Tech stack nhập cách nhau bằng dấu phẩy. Thêm mới →{" "}
+              <code className="rounded bg-muted px-1 text-xs">POST …/create</code>; chỉnh sửa →{" "}
+              <code className="rounded bg-muted px-1 text-xs">POST …/update</code> kèm{" "}
+              <code className="text-xs">id</code>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-2 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="repo-repoName">repoName</Label>
+              <Input
+                id="repo-repoName"
+                value={form.repoName}
+                onChange={(e) => setForm((f) => ({ ...f, repoName: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="repo-highlights">highlights</Label>
+              <Input
+                id="repo-highlights"
+                value={form.highlights}
+                onChange={(e) => setForm((f) => ({ ...f, highlights: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="repo-desc">description</Label>
+              <Textarea
+                id="repo-desc"
+                rows={3}
+                value={form.description}
+                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="repo-md">markdown</Label>
+              <Textarea
+                id="repo-md"
+                rows={8}
+                className="font-mono text-xs"
+                spellCheck={false}
+                value={form.markdown}
+                onChange={(e) => setForm((f) => ({ ...f, markdown: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="repo-gh">githubUrl</Label>
+              <Input
+                id="repo-gh"
+                value={form.githubUrl}
+                onChange={(e) => setForm((f) => ({ ...f, githubUrl: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="repo-live">liveUrl</Label>
+              <Input
+                id="repo-live"
+                value={form.liveUrl}
+                onChange={(e) => setForm((f) => ({ ...f, liveUrl: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="repo-tech">techStack</Label>
+              <Input
+                id="repo-tech"
+                value={techRaw}
+                onChange={(e) => setTechRaw(e.target.value)}
+                placeholder="Java, TypeScript, Next.js"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="repo-sort">sortOrder</Label>
+              <Input
+                id="repo-sort"
+                type="number"
+                value={Number.isFinite(form.sortOrder) ? form.sortOrder : 0}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, sortOrder: Number(e.target.value) || 0 }))
+                }
+              />
+            </div>
+            {dialogMode === "edit" && (
+              <div className="flex items-center justify-between gap-4 rounded-md border border-border px-3 py-3 sm:col-span-2">
+                <div className="space-y-0.5">
+                  <Label htmlFor="repo-is-active" className="text-base">
+                    isActive
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Trạng thái hiển thị / kích hoạt repo (gửi field isActive trong body).
+                  </p>
+                </div>
+                <Switch
+                  id="repo-is-active"
+                  checked={form.isActive}
+                  onCheckedChange={(checked) =>
+                    setForm((f) => ({ ...f, isActive: checked }))
+                  }
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              Hủy
+            </Button>
+            <Button type="button" onClick={() => void submitDialog()} disabled={saving}>
+              {saving ? "Đang lưu…" : "Lưu"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <div className="grid min-h-[480px] gap-4 lg:grid-cols-[minmax(0,280px)_1fr]">
         <Card className="flex flex-col">
@@ -190,10 +397,10 @@ export function RepoManager() {
               <CardTitle className="text-base">Danh sách Repo</CardTitle>
               <CardDescription>{listLoading ? "Đang tải…" : `${repos.length} repo`}</CardDescription>
             </div>
-            <Button type="button" size="sm" className="gap-1" onClick={openCreate}>
+            {/* <Button type="button" size="sm" className="gap-1" onClick={openCreate}>
               <Plus className="h-4 w-4" />
               Thêm
-            </Button>
+            </Button> */}
           </CardHeader>
           <CardContent className="flex-1 p-0">
             <ScrollArea className="h-[420px] px-4 pb-4">
@@ -205,9 +412,8 @@ export function RepoManager() {
                       <button
                         type="button"
                         onClick={() => setSelectedId(r.id)}
-                        className={`flex w-full flex-col gap-1 rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-accent/60 ${
-                          active ? "border-primary/50 bg-primary/10" : "border-transparent bg-muted/30"
-                        }`}
+                        className={`flex w-full flex-col gap-1 rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-accent/60 ${active ? "border-primary/50 bg-primary/10" : "border-transparent bg-muted/30"
+                          }`}
                       >
                         <span className="font-medium leading-tight">{r.repoName || r.id}</span>
                         <Badge variant={r.is_active ? "default" : "secondary"} className="w-fit text-[10px]">
@@ -435,6 +641,6 @@ export function RepoManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }

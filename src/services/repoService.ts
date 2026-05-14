@@ -6,8 +6,8 @@ import type { RepoCmsCreatePayload, RepoCmsRecord, RepoCmsUpdatePayload } from "
 function normalizeRepoRecord(raw: Record<string, unknown>): RepoCmsRecord {
   const tech =
     Array.isArray(raw.tech_stack) ? (raw.tech_stack as string[])
-    : Array.isArray(raw.techStack) ? (raw.techStack as string[])
-    : [];
+      : Array.isArray(raw.techStack) ? (raw.techStack as string[])
+        : [];
   const active = raw.is_active ?? raw.isActive;
   return {
     id: String(raw.id ?? ""),
@@ -49,38 +49,55 @@ async function parseRepoMutationResponse(data: unknown, refetchId?: string): Pro
   if (refetchId) {
     const list = await fetchReposCms();
     const found = list.find((r) => r.id === refetchId);
-    if (found) {
-      return found;
-    }
+    if (found) return found;
   }
   throw new Error("Phản hồi API repo không hợp lệ");
 }
 
-/**
- * GET /cms/repo/fetch — `payload.data` là mảng.
- */
+/** GET /cms/repo/fetch */
 export async function fetchReposCms(): Promise<RepoCmsRecord[]> {
   const { data } = await endpoint.get<unknown>("/cms/repo/fetch");
   const rows = unwrapApiList<Record<string, unknown>>(data);
   return rows.map(normalizeRepoRecord);
 }
 
-/**
- * POST /cms/repo/create — chỉ tạo mới (body không gửi `id`).
- */
+/** POST /cms/repo/create */
 export async function createRepoCms(payload: RepoCmsCreatePayload): Promise<RepoCmsRecord> {
   const body = toWriteBody(payload);
   const { data } = await endpoint.post<unknown>("/cms/repo/create", body);
   return parseRepoMutationResponse(data);
 }
 
-/**
- * POST /cms/repo/update — cập nhật theo `id` (tách khỏi create để backend không nhầm thành tạo mới).
- */
+/** POST /cms/repo/update */
 export async function updateRepoCms(payload: RepoCmsUpdatePayload): Promise<RepoCmsRecord> {
   const { data } = await endpoint.post<unknown>("/cms/repo/update", {
     id: payload.id,
     ...toWriteBody(payload),
   });
   return parseRepoMutationResponse(data, payload.id);
+}
+
+/**
+ * POST /cms/repo/upload — gửi file JSON dưới dạng multipart/form-data.
+ * Server trả về danh sách repo đã được import.
+ */
+export async function uploadRepoCms(file: File): Promise<number> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const { data } = await endpoint.post<{
+    statusCode: number;
+    message: string;
+    payload?: {
+      data?: number;
+    };
+  }>("/cms/repo/import", formData);
+
+  const id = data?.payload?.data;
+
+  if (typeof id === "number") {
+    return id;
+  }
+
+  throw new Error("Phản hồi upload không hợp lệ");
 }
