@@ -1,73 +1,201 @@
-# Welcome to your Lovable project
+# 🐱 Nekofolio
 
-## Project info
+A modern, full-featured personal portfolio website with an integrated admin panel, AI chatbot, and dynamic content management — built with Next.js 16, TypeScript, and Tailwind CSS.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## ✨ Features
 
-There are several ways of editing your application.
+### Public-Facing Portfolio
+- **Hero Section** – Animated introduction with personal branding
+- **About Section** – Personal background and story
+- **Tech Stack Section** – Visual display of technical skills and tools
+- **Projects Section** – Showcase of GitHub repositories and personal projects fetched dynamically
+- **Leadership Section** – Highlights of leadership experiences
+- **AI Section** – Dedicated section highlighting AI-related work
+- **Contact Section** – Contact form or links for reaching out
+- **Chatbot Widget** – Floating AI chatbot powered by a custom chat service (`chatchit.ts`)
+- **Cookie Consent Banner** – GDPR-friendly cookie notice
+- **Footer & Navbar** – Responsive navigation and site footer
 
-**Use Lovable**
+### Admin Panel (`/admin`)
+- **Authentication Guard** – Protected routes; only accessible after login (`/login`)
+- **Dashboard** – Overview of site content and metrics
+- **CV Manager** – Upload and manage CV files via API
+- **Repo Manager** – Manage which GitHub repositories appear in the portfolio
+- **Admin Sidebar & Bar** – Clean admin navigation shell
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### Developer Experience
+- **Zustand** – Lightweight global state management (auth store)
+- **TanStack Query** – Server state, caching, and async data fetching
+- **React Hook Form + Zod** – Type-safe form validation
+- **Axios** – HTTP client with centralized endpoint configuration
+- **Framer Motion** – Smooth animations and transitions
+- **shadcn/ui** – Accessible, composable UI component library built on Radix UI
+- **next-themes** – Dark/light mode support
+- **Sonner** – Toast notification system
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 🛠 Tech Stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+| Category | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript 5 |
+| Styling | Tailwind CSS 3 + tailwindcss-animate |
+| UI Components | shadcn/ui + Radix UI |
+| State Management | Zustand |
+| Data Fetching | TanStack React Query + Axios |
+| Forms | React Hook Form + Zod |
+| Animations | Framer Motion |
+| Charts | Recharts |
+| Markdown | react-markdown |
+| Notifications | Sonner |
+| Testing | Testing Library + jsdom |
+| Linting | ESLint 9 + TypeScript ESLint |
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## 📁 Project Structure
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── page.tsx            # Home / portfolio page
+│   ├── layout.tsx          # Root layout
+│   ├── not-found.tsx       # 404 page
+│   ├── login/              # Login page
+│   └── admin/              # Admin panel (protected)
+│       ├── layout.tsx
+│       ├── page.tsx
+│       └── dashboard/
+├── components/             # UI components
+│   ├── HeroSection.tsx
+│   ├── AboutSection.tsx
+│   ├── TechStackSection.tsx
+│   ├── ProjectsSection.tsx
+│   ├── LeadershipSection.tsx
+│   ├── AISection.tsx
+│   ├── ContactSection.tsx
+│   ├── ChatbotWidget.tsx
+│   ├── CookieConsent.tsx
+│   ├── Navbar.tsx
+│   ├── Footer.tsx
+│   ├── home-page.tsx
+│   ├── providers.tsx
+│   ├── admin/              # Admin-specific components
+│   │   ├── AdminAuthGuard.tsx
+│   │   ├── AdminBar.tsx
+│   │   ├── AdminDashboardShell.tsx
+│   │   ├── CVManager.tsx
+│   │   ├── LoginForm.tsx
+│   │   ├── RepoManager.tsx
+│   │   └── Sidebar.tsx
+│   └── ui/                 # shadcn/ui primitives
+├── hooks/                  # Custom React hooks
+│   ├── use-auth.ts
+│   ├── use-mobile.tsx
+│   └── use-toast.ts
+├── lib/                    # Utility functions
+│   ├── utils.ts
+│   ├── auth-constants.ts
+│   ├── unwrap-api-list.ts
+│   └── unwrap-payload-data.ts
+├── services/               # API service layer
+│   ├── endpoint.ts         # Centralized API endpoints
+│   ├── authService.ts
+│   ├── chatchit.ts         # AI chatbot service
+│   ├── cvService.ts
+│   └── repoService.ts
+├── stores/                 # Zustand global stores
+│   ├── auth-store.ts
+│   └── index.ts
+├── types/                  # TypeScript type definitions
+│   ├── admin.ts
+│   ├── auth.ts
+│   ├── cv.ts
+│   └── repo.ts
+└── index.css               # Global styles
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 🚀 Getting Started
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Prerequisites
+
+- **Node.js** ≥ 18.x
+- **npm** ≥ 9.x
+
+### Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/nguyenlyminhman/nekofolio.git
+
+# 2. Navigate into the project directory
+cd nekofolio
+
+# 3. Install dependencies
+npm install
+
+# 4. Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Available Scripts
 
-**Use GitHub Codespaces**
+| Script | Description |
+|---|---|
+| `npm run dev` | Start development server with hot reload |
+| `npm run build` | Build production bundle |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint checks |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 🔐 Admin Panel
 
-This project is built with:
+The admin panel is accessible at `/admin` and requires authentication. Log in via `/login` using your credentials. The auth state is persisted via Zustand and protected by `AdminAuthGuard`.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Admin capabilities:
+- View dashboard metrics
+- Manage and upload CV files
+- Add, edit, or remove repository entries shown on the portfolio
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## 🤖 AI Chatbot
 
-## Can I connect a custom domain to my Lovable project?
+A floating chatbot widget (`ChatbotWidget.tsx`) is embedded on the portfolio page. It communicates with a backend chat service via `chatchit.ts` and supports conversational interactions about the portfolio owner.
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🧪 Testing
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This project is set up with Testing Library and jsdom. Run tests with:
+
+```bash
+npm test
+```
+
+Test setup is configured in `src/test/setup.ts`.
+
+---
+
+## 📦 Deployment
+
+This project can be deployed to any platform that supports Next.js:
+
+- **Vercel** (recommended) – Connect your GitHub repo for zero-config deploys
+- **Netlify** – Supported via Next.js adapter
+- **Self-hosted** – Run `npm run build && npm start`
+
+---
+
+## 📄 License
+
+This project is private. All rights reserved by [nguyenlyminhman](https://github.com/nguyenlyminhman).
