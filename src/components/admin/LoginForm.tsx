@@ -119,7 +119,7 @@ export function LoginForm() {
           </Button>
         </form>
 
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        {/* <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Separator className="flex-1" />
           hoặc
           <Separator className="flex-1" />
@@ -138,7 +138,7 @@ export function LoginForm() {
           <Button type="button" variant="secondary" className="w-full" onClick={handleManualToken}>
             Lưu token và vào Admin
           </Button>
-        </div>
+        </div> */}
       </CardContent>
     </Card>
   );

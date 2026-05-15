@@ -1,19 +1,16 @@
 "use client";
-import ReactMarkdown from "react-markdown"; // Import thêm cái này
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, X, Send, FileText, CalendarCheck, Cpu } from "lucide-react";
 import { useChatStore } from "@/stores";
 
-
 type Message = {
   id: string;
   role: "bot" | "hr";
   content: string;
-  streaming?: boolean;
 };
 
-const BOT_NAME = "Manos";
+const BOT_NAME = "Neko";
 
 const initialMessage: Message = {
   id: "welcome",
@@ -28,9 +25,7 @@ const ChatbotWidget = () => {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([initialMessage]);
   const [input, setInput] = useState("");
-  const [hasGreeted, setHasGreeted] = useState(false);
   const [showPing, setShowPing] = useState(true);
-  const [isStreaming, setIsStreaming] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -42,32 +37,23 @@ const ChatbotWidget = () => {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
-    setIsStreaming(false);
-    // Xóa flag streaming khỏi message cuối
-    setMessages((prev) =>
-      prev.map((m) => (m.streaming ? { ...m, streaming: false } : m))
-    );
   };
 
   useEffect(() => {
     const t = setTimeout(() => setOpen(true), 3000);
-
     fetchHistory().catch(console.error);
-
     return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
     if (message.length === 0) return;
 
-    // Map Message từ store (role: "hr"|"bot") sang Message local widget
     const historyMsgs: Message[] = message.map((m) => ({
       id: m.id,
       role: m.role,
       content: m.content,
     }));
 
-    // Đặt lịch sử trước initialMessage chào hỏi
     setMessages([initialMessage, ...historyMsgs]);
   }, [message]);
 
@@ -88,17 +74,18 @@ const ChatbotWidget = () => {
     }
   };
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const updateBotMessage = (id: string, content: string) => {
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, content } : m)));
+  };
 
-    if (!input.trim() || isTyping) return;
-
-    handleSubmit(e);
-    resetTextareaHeight();
+  const terminateStream = () => {
+    closeSSE();
+    setIsTyping(false);
+    fetchHistory().catch(console.error);
   };
 
   const startStreaming = (userQuery: string) => {
-    if (isTyping) return; // Chống gửi tin nhắn khi đang stream
+    if (isTyping) return;
 
     closeSSE();
     setIsTyping(true);
@@ -125,7 +112,6 @@ const ChatbotWidget = () => {
           return;
         }
 
-        // Cập nhật từng chunk
         if (data.chunk) {
           setMessages((prev) =>
             prev.map((m) =>
@@ -139,31 +125,29 @@ const ChatbotWidget = () => {
     };
 
     es.onerror = () => {
-      updateBotMessage(botMsgId, `Hình như đường truyền giữa chúng mình vừa có chút 'nấc cụt'. Bạn thử gửi lại tin nhắn giúp Manny nhé! ✨
-        \nLooks like our connection just had a little 'hiccup.' Could you please resend that message for Manny? ✨`);
+      updateBotMessage(
+        botMsgId,
+        `Hình như đường truyền giữa chúng mình vừa có chút 'nấc cụt'. Bạn thử gửi lại tin nhắn giúp Neko nhé! ✨\nLooks like our connection just had a little 'hiccup.' Could you please resend that message for Neko? ✨`
+      );
       terminateStream();
     };
   };
 
-  // Hàm helper để dọn dẹp
-  const terminateStream = () => {
-    closeSSE();
-    setIsTyping(false);
-    // Sau khi bot trả lời xong, fetch lại để đồng bộ với server
-    fetchHistory().catch(console.error);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = input.trim();
+    if (!trimmed || isTyping) return;
+
+    setMessages((prev) => [
+      ...prev,
+      { id: `${Date.now()}-${Math.random()}`, role: "hr", content: trimmed },
+    ]);
+    setInput("");
+    resetTextareaHeight();
+    startStreaming(trimmed);
   };
 
-  const updateBotMessage = (id: string, content: string) => {
-    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, content } : m)));
-  };
-
-  useEffect(() => {
-    if (hasGreeted) return;
-    const t = setTimeout(() => setHasGreeted(true), 1500);
-    return () => clearTimeout(t);
-  }, [hasGreeted]);
-
-  // Auto-scroll mỗi khi messages thay đổi (bao gồm khi chunk mới tới)
+  // Auto-scroll khi messages thay đổi
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -178,25 +162,8 @@ const ChatbotWidget = () => {
     }
   };
 
-  const pushMessage = (msg: Omit<Message, "id">) => {
-    setMessages((prev) => [
-      ...prev,
-      { ...msg, id: `${Date.now()}-${Math.random()}` },
-    ]);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = input.trim();
-    if (!trimmed || isStreaming) return;
-    pushMessage({ role: "hr", content: trimmed });
-    setInput("");
-    startStreaming(trimmed);
-  };
-
   return (
     <>
-      {/* CSS cho cursor nhấp nháy — inject 1 lần */}
       <style>{`
         @keyframes blink {
           0%, 100% { opacity: 1; }
@@ -279,7 +246,7 @@ const ChatbotWidget = () => {
                   </p>
                   <p className="font-mono-accent text-[10px] text-primary tracking-wider uppercase flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                    {isStreaming ? "Typing…" : "Online"}
+                    {isTyping ? "Typing…" : "Online"}
                   </p>
                 </div>
               </div>
@@ -302,20 +269,21 @@ const ChatbotWidget = () => {
                   className={`flex ${m.role === "hr" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${m.role === "hr" ? "bg-primary text-primary-foreground" : "bg-secondary border text-foreground"
+                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${m.role === "hr"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary border text-foreground"
                       }`}
                   >
-                    {/* Dùng Markdown để text hiện lên mượt và đúng định dạng */}
                     <div className="prose prose-sm dark:prose-invert break-words whitespace-pre-line">
                       {m.content}
                     </div>
 
                     {isTyping && m.id.endsWith("-bot") && m.content === "" && (
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <span>Manny is typing</span>
+                        <span>Neko is typing</span>
                         <span className="w-1 h-1 rounded-full bg-current animate-bounce" />
-                        <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:0.2s]" />
-                        <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:0.4s]" />
+                        <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:0.3s]" />
+                        <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:0.6s]" />
                       </div>
                     )}
                   </div>
@@ -325,17 +293,9 @@ const ChatbotWidget = () => {
 
             {/* Input */}
             <form
-              onSubmit={onSubmit}
-              className="
-                flex items-end gap-2
-                px-3 py-3
-                border-t
-                bg-background/80
-                backdrop-blur-sm
-              "
-              style={{
-                borderColor: "hsl(var(--border))",
-              }}
+              onSubmit={handleSubmit}
+              className="flex items-end gap-2 px-3 py-3 border-t bg-background/80 backdrop-blur-sm"
+              style={{ borderColor: "hsl(var(--border))" }}
             >
               <div
                 className="flex-1 flex items-end rounded-2xl border bg-background/40 transition-all focus-within:ring-1"
@@ -348,8 +308,8 @@ const ChatbotWidget = () => {
                   ref={textareaRef}
                   value={input}
                   rows={1}
-                  disabled={isStreaming}
-                  placeholder={isStreaming ? "Đang trả lời…" : "Ask me anything…"}
+                  disabled={isTyping}
+                  placeholder={isTyping ? "Đang trả lời…" : "Ask me anything…"}
                   onChange={(e) => {
                     setInput(e.target.value);
                     autoResizeTextarea();
@@ -357,16 +317,7 @@ const ChatbotWidget = () => {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-
-                      if (!input.trim()) return;
-
                       handleSubmit(e as any);
-
-                      setInput("");
-
-                      setTimeout(() => {
-                        resetTextareaHeight();
-                      }, 0);
                     }
                   }}
                   className="flex-1 resize-none overflow-y-auto bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none px-4 py-3 min-h-[48px] max-h-40 disabled:opacity-50"
@@ -375,9 +326,7 @@ const ChatbotWidget = () => {
                   type="submit"
                   disabled={!input.trim() || isTyping}
                   className="h-10 w-10 mb-2 mr-2 mt-2 shrink-0 rounded-xl flex items-center justify-center text-primary-foreground transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    background: "hsl(var(--primary))",
-                  }}
+                  style={{ background: "hsl(var(--primary))" }}
                 >
                   {isTyping ? (
                     <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
