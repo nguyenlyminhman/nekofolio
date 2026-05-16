@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { label: "About", href: "#about" },
@@ -17,73 +17,120 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 24);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   return (
-    <motion.nav
-      initial={{ y: -80 }}
-      animate={{ y: 0 }}
+    <motion.header
+      initial={{ y: -80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "glass-card border-b border-border/30 shadow-lg" : "bg-transparent"
-      }`}
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled
+          ? "backdrop-blur-xl bg-background/70 border-b border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
+          : "bg-transparent"
+        }`}
     >
-      <div className="section-container flex items-center justify-between h-16">
-        <a href="#" className="font-mono-accent text-sm font-semibold text-primary tracking-wider">
-          NLMM<span className="text-muted-foreground">.dev</span>
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-8">
+        {/* Logo */}
+        <a
+          href="#"
+          className="group flex items-center gap-3"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-sm font-bold text-primary shadow-lg shadow-primary/10 transition-all duration-300 group-hover:scale-105 group-hover:bg-primary/20">
+            MN
+          </div>
+
+          <div className="flex flex-col leading-tight">
+            <span className="text-sm font-semibold tracking-wide text-foreground">
+              Nguyễn Lý Minh Mẫn
+            </span>
+
+            <span className="text-xs text-primary">
+              man-nguyen.com
+            </span>
+          </div>
         </a>
 
-        {/* Desktop */}
-        <div className="hidden md:flex items-center gap-8">
+        {/* Desktop Navigation */}
+        <nav className="hidden items-center gap-8 md:flex">
           {navItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200 relative after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1.5px] after:bottom-[-4px] after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left"
+              className="relative text-sm font-medium text-muted-foreground transition-colors duration-300 hover:text-primary after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-300 hover:after:scale-x-100"
             >
               {item.label}
             </a>
           ))}
-        </div>
+        </nav>
 
-        {/* Mobile toggle */}
+        {/* Mobile Button */}
         <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden text-muted-foreground hover:text-foreground"
+          onClick={() => setMobileOpen((prev) => !prev)}
+          className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted-foreground transition-all duration-300 hover:border-primary/30 hover:text-primary md:hidden"
+          aria-label="Toggle Menu"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             {mobileOpen ? (
-              <path d="M18 6L6 18M6 6l12 12" />
+              <>
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </>
             ) : (
-              <path d="M3 12h18M3 6h18M3 18h18" />
+              <>
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </>
             )}
           </svg>
         </button>
       </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="md:hidden glass-card border-t border-border/30 px-4 pb-4"
-        >
-          {navItems.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className="block py-3 text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              {item.label}
-            </a>
-          ))}
-        </motion.div>
-      )}
-    </motion.nav>
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+            className="border-t border-white/10 bg-background/95 backdrop-blur-xl md:hidden"
+          >
+            <div className="flex flex-col px-6 py-4">
+              {navItems.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-lg px-3 py-3 text-sm text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.header>
   );
 };
 
