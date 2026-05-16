@@ -93,7 +93,7 @@ const ChatbotWidget = () => {
     const botMsgId = `${Date.now()}-bot`;
     setMessages((prev) => [...prev, { id: botMsgId, role: "bot", content: "" }]);
 
-    const sseUrl = `http://localhost:3001/api/v1/chat/stream?message=${encodeURIComponent(userQuery)}`;
+    const sseUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/stream?message=${encodeURIComponent(userQuery)}`;
     const es = new EventSource(sseUrl, { withCredentials: true });
     eventSourceRef.current = es;
 

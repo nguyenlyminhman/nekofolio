@@ -3,7 +3,7 @@ import axios from "axios";
 import { ADMIN_AUTH_TOKEN_STORAGE_KEY } from "@/lib/auth-constants";
 
 export const endpoint = axios.create({
-  baseURL: "http://localhost:3001/api/v1",
+  baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api/v1`,
   withCredentials: true,
 });
 
