@@ -128,6 +128,7 @@ jobs:
             echo "===== Start Next.js ====="
             pm2 start npm \
               --name $APP_NAME \
+              --cwd $APP_DIR \
               -- start
 
             echo "===== Wait app startup ====="
