@@ -1,14 +1,19 @@
-name: Deploy Nekofolio - Production Standard
+name: Deploy Nekofolio UI - Next.js Production
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
-    types: [ closed ]
+    branches:
+      - main
+    types:
+      - closed
 
 jobs:
-  # --- GIAI ĐOẠN CI: BUILD & TEST ---
+  # =========================
+  # CI - BUILD & TEST
+  # =========================
   ci-build:
     runs-on: ubuntu-latest
 
@@ -17,41 +22,45 @@ jobs:
       (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
 
     steps:
-      - name: Checkout Code
+      - name: Checkout source code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Run Lint
-        run: npm run lint
+      - name: Run ESLint
+        run: npm run lint --if-present
 
-      - name: Run Tests
+      - name: Run tests
         run: npm test --if-present
 
-      - name: Build Next.js
+      - name: Build Next.js application
         run: npm run build
         env:
           NODE_ENV: production
 
-      - name: Upload Build Artifact
+      - name: Upload production artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-files
+          name: nextjs-build
+          retention-days: 1
           path: |
-            .next/
-            public/
+            .next
+            public
             package.json
             package-lock.json
-            next.config.*
-          retention-days: 1
+            next.config.js
+            ecosystem.config.js
 
-  # --- GIAI ĐOẠN CD: DEPLOY VỚI APPROVAL ---
+  # =========================
+  # CD - DEPLOY TO EC2
+  # =========================
   cd-deploy:
     needs: ci-build
     runs-on: ubuntu-latest
@@ -61,24 +70,21 @@ jobs:
       url: https://man-nguyen.com
 
     steps:
-      - name: Download Build Artifact
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: build-files
+          name: nextjs-build
 
-      - name: Debug artifact structure
-        run: find . -type f | head -30
-
-      - name: Deploy to EC2 via SCP
+      - name: Deploy files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: ".next/,public/,package.json,package-lock.json,next.config.*"
+          source: ".next/,public/,package.json,package-lock.json,next.config.js,ecosystem.config.js"
           target: "~/apps/nekofolio-ui"
 
-      - name: Restart Application via SSH
+      - name: Restart Next.js application
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -87,30 +93,40 @@ jobs:
           script: |
             set -e
 
-            cd ~/apps/nekofolio-ui
+            APP_DIR=~/apps/nekofolio-ui
+            APP_NAME=nekofolio-ui
 
-            echo "=== Directory structure ==="
-            ls -la
+            echo "===== Go to app directory ====="
+            cd $APP_DIR
 
-            echo "Installing production dependencies..."
-            npm install --omit=dev
+            echo "===== Install production dependencies ====="
+            npm ci --omit=dev
 
-            echo "Starting/Reloading application..."
-            if pm2 describe nekofolio-ui > /dev/null 2>&1; then
-              pm2 reload nekofolio-ui
-            else
-              pm2 start npm --name nekofolio-ui -- start
+            echo "===== Ensure .env.production exists ====="
+            if [ ! -f .env.production ]; then
+              echo ".env.production not found!"
+              exit 1
             fi
 
-            echo "Waiting for app to be ready..."
-            sleep 5
+            echo "===== Start or Reload PM2 ====="
+            if pm2 describe $APP_NAME > /dev/null 2>&1; then
+              pm2 reload $APP_NAME
+            else
+              pm2 start ecosystem.config.js
+            fi
 
-            echo "Health check..."
-            curl -sf http://localhost:3000 || {
-              echo "Health check failed! Printing logs..."
-              pm2 logs nekofolio-ui --lines 30 --nostream
+            echo "===== Wait for app startup ====="
+            sleep 10
+
+            echo "===== Health check ====="
+            curl -f http://localhost:3000 || {
+              echo "Application health check failed!"
+              pm2 logs $APP_NAME --lines 50 --nostream
               exit 1
             }
 
-            echo "Deploy successful!"
-            pm2 status nekofolio-ui
+            echo "===== Save PM2 process ====="
+            pm2 save
+
+            echo "===== PM2 Status ====="
+            pm2 status
