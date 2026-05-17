@@ -11,6 +11,9 @@ on:
       - closed
 
 jobs:
+  # =========================
+  # CI - BUILD & TEST
+  # =========================
   ci-build:
     runs-on: ubuntu-latest
 
@@ -55,6 +58,9 @@ jobs:
             next.config.js
             ecosystem.config.js
 
+  # =========================
+  # CD - DEPLOY TO EC2
+  # =========================
   cd-deploy:
     needs: ci-build
     runs-on: ubuntu-latest
@@ -69,22 +75,14 @@ jobs:
         with:
           name: nextjs-build
 
-      # ✅ THAY scp-action BẰNG rsync qua SSH tunnel
-      - name: Setup SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Deploy files via rsync
-        run: |
-          rsync -avz --delete \
-            --exclude='.git' \
-            --exclude='node_modules' \
-            -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
-            .next/ public/ package.json package-lock.json next.config.js ecosystem.config.js \
-            ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/apps/nekofolio-ui/
+      - name: Deploy files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: ".next/,public/,package.json,package-lock.json,next.config.js,ecosystem.config.js"
+          target: "~/apps/nekofolio-ui"
 
       - name: Restart Next.js application
         uses: appleboy/ssh-action@v1.0.3
@@ -102,23 +100,35 @@ jobs:
             echo "===== Go to app directory ====="
             cd $APP_DIR
 
+            echo "===== Show files ====="
+            ls -la
+
             echo "===== Node version ====="
-            node -v && npm -v
+            node -v
+            npm -v
 
             echo "===== Install dependencies ====="
             npm install --omit=dev
+
+            echo "===== PM2 status before ====="
+            pm2 status || true
 
             echo "===== Delete old process if exists ====="
             pm2 delete $APP_NAME || true
 
             echo "===== Start Next.js ====="
-            pm2 start npm --name $APP_NAME -- start
+            pm2 start npm \
+              --name $APP_NAME \
+              -- start
 
             echo "===== Wait app startup ====="
-            sleep 10
+            sleep 15
+
+            echo "===== PM2 logs ====="
+            pm2 logs $APP_NAME --lines 50 --nostream || true
 
             echo "===== Health check ====="
-            curl -sf http://127.0.0.1:3000 || (pm2 logs $APP_NAME --lines 50 --nostream; exit 1)
+            curl -v http://127.0.0.1:3000
 
             echo "===== Save PM2 ====="
             pm2 save
