@@ -47,13 +47,13 @@ jobs:
 
       - name: Compress artifact
         run: |
-          tar -czf deploy.tar.gz \
-            .next \
-            public \
-            package.json \
-            package-lock.json \
-            next.config.js \
-            ecosystem.config.js
+          FILES=".next public package.json package-lock.json"
+          [ -f next.config.js ] && FILES="$FILES next.config.js"
+          [ -f next.config.ts ] && FILES="$FILES next.config.ts"
+          [ -f next.config.mjs ] && FILES="$FILES next.config.mjs"
+          [ -f ecosystem.config.js ] && FILES="$FILES ecosystem.config.js"
+          [ -f ecosystem.config.cjs ] && FILES="$FILES ecosystem.config.cjs"
+          tar -czf deploy.tar.gz $FILES
 
       - name: Upload production artifact
         uses: actions/upload-artifact@v4
