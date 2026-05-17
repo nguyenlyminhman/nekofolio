@@ -45,18 +45,22 @@ jobs:
         env:
           NODE_ENV: production
 
+      - name: Compress artifact
+        run: |
+          tar -czf deploy.tar.gz \
+            .next \
+            public \
+            package.json \
+            package-lock.json \
+            next.config.js \
+            ecosystem.config.js
+
       - name: Upload production artifact
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-build
           retention-days: 1
-          path: |
-            .next
-            public
-            package.json
-            package-lock.json
-            next.config.js
-            ecosystem.config.js
+          path: deploy.tar.gz
 
   # =========================
   # CD - DEPLOY TO EC2
@@ -75,16 +79,16 @@ jobs:
         with:
           name: nextjs-build
 
-      - name: Deploy files to EC2
+      - name: Copy archive to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: ".next/,public/,package.json,package-lock.json,next.config.js,ecosystem.config.js"
+          source: "deploy.tar.gz"
           target: "~/apps/nekofolio-ui"
 
-      - name: Restart Next.js application
+      - name: Extract & Restart on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -100,8 +104,12 @@ jobs:
             echo "===== Go to app directory ====="
             cd $APP_DIR
 
-            echo "===== Show files ====="
-            ls -la
+            echo "===== Extract artifact ====="
+            tar -xzf deploy.tar.gz
+            rm deploy.tar.gz
+
+            echo "===== Verify .next exists ====="
+            ls -la .next/
 
             echo "===== Node version ====="
             node -v
@@ -122,13 +130,13 @@ jobs:
               -- start
 
             echo "===== Wait app startup ====="
-            sleep 15
+            sleep 10
 
             echo "===== PM2 logs ====="
             pm2 logs $APP_NAME --lines 50 --nostream || true
 
             echo "===== Health check ====="
-            curl -v http://127.0.0.1:3000
+            curl -f http://127.0.0.1:3000
 
             echo "===== Save PM2 ====="
             pm2 save
