@@ -108,7 +108,7 @@ jobs:
             npm -v
 
             echo "===== Install dependencies ====="
-            npm ci --omit=dev
+            npm install --omit=dev
 
             echo "===== PM2 status before ====="
             pm2 status || true
