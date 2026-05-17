@@ -90,8 +90,9 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 30m
           script: |
-            set -e
+            set -euxo pipefail
 
             APP_DIR=~/apps/nekofolio-ui
             APP_NAME=nekofolio-ui
@@ -99,34 +100,38 @@ jobs:
             echo "===== Go to app directory ====="
             cd $APP_DIR
 
-            echo "===== Install production dependencies ====="
+            echo "===== Show files ====="
+            ls -la
+
+            echo "===== Node version ====="
+            node -v
+            npm -v
+
+            echo "===== Install dependencies ====="
             npm ci --omit=dev
 
-            echo "===== Ensure .env.production exists ====="
-            if [ ! -f .env.production ]; then
-              echo ".env.production not found!"
-              exit 1
-            fi
+            echo "===== PM2 status before ====="
+            pm2 status || true
 
-            echo "===== Start or Reload PM2 ====="
-            if pm2 describe $APP_NAME > /dev/null 2>&1; then
-              pm2 reload $APP_NAME
-            else
-              pm2 start ecosystem.config.js
-            fi
+            echo "===== Delete old process if exists ====="
+            pm2 delete $APP_NAME || true
 
-            echo "===== Wait for app startup ====="
-            sleep 10
+            echo "===== Start Next.js ====="
+            pm2 start npm \
+              --name $APP_NAME \
+              -- start
+
+            echo "===== Wait app startup ====="
+            sleep 15
+
+            echo "===== PM2 logs ====="
+            pm2 logs $APP_NAME --lines 50 --nostream || true
 
             echo "===== Health check ====="
-            curl -f http://localhost:3000 || {
-              echo "Application health check failed!"
-              pm2 logs $APP_NAME --lines 50 --nostream
-              exit 1
-            }
+            curl -v http://127.0.0.1:3000
 
-            echo "===== Save PM2 process ====="
+            echo "===== Save PM2 ====="
             pm2 save
 
-            echo "===== PM2 Status ====="
+            echo "===== Final PM2 status ====="
             pm2 status
