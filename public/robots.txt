@@ -1,14 +1,59 @@
+# Global rules
+User-agent: *
+Allow: /
+
+# Block unnecessary system paths
+Disallow: /api/
+Disallow: /admin/
+Disallow: /private/
+Disallow: /tmp/
+Disallow: /node_modules/
+Disallow: /.git/
+
+# Allow important assets
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.webp$
+Allow: /*.svg$
+
+# Crawl delay (optional for aggressive bots)
+Crawl-delay: 5
+
+# Sitemap
+Sitemap: https://man-nguyen.com/sitemap.xml
+
+
+# Google
 User-agent: Googlebot
 Allow: /
 
+# Google Image
+User-agent: Googlebot-Image
+Allow: /
+
+# Bing
 User-agent: Bingbot
 Allow: /
 
-User-agent: Twitterbot
+# OpenAI / ChatGPT browsing
+User-agent: OAI-SearchBot
 Allow: /
 
+# Perplexity AI
+User-agent: PerplexityBot
+Allow: /
+
+# Claude / Anthropic
+User-agent: ClaudeBot
+Allow: /
+
+# Facebook
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
+# Twitter/X
+User-agent: Twitterbot
 Allow: /
