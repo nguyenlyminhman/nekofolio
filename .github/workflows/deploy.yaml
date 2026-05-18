@@ -44,7 +44,7 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
-          NEXT_PUBLIC_API_URL: http://man-nguyen.com
+          NEXT_PUBLIC_API_URL: https://man-nguyen.com
 
       - name: Compress artifact
         run: |
