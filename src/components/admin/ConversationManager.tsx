@@ -291,6 +291,7 @@ export function ConversationManager() {
               <ul className="space-y-1 pr-3">
                 {rows.map((row) => {
                   const cid = row.conversation?.id;
+                  const lastSeen = row?.last_seen_at?.toString() ?? ''
                   if (!cid) {
                     return null;
                   }
@@ -316,7 +317,7 @@ export function ConversationManager() {
                         />
                         <span className="min-w-0 flex-1">
                           <span className="line-clamp-2 font-medium leading-tight">{listItemLabel(row)}</span>
-                          <span className="mt-1 block truncate text-[10px] text-muted-foreground">{cid}</span>
+                          <span className="mt-1 block truncate text-[10px] text-muted-foreground">{new Date(lastSeen).toLocaleString()}</span>
                         </span>
                       </button>
                     </li>
