@@ -52,7 +52,7 @@ const AboutSection = () => {
           >
             {/* Badge */}
             <div className="glass-card glow-border p-4 text-center">
-              <p className="text-3xl font-bold text-gradient">7+</p>
+              <p className="text-3xl font-bold text-gradient">8+</p>
               <p className="text-sm text-muted-foreground mt-1">Years Experience</p>
             </div>
 
