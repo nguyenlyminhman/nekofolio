@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Cookie, X } from "lucide-react";
@@ -9,12 +8,14 @@ const CookieConsent = () => {
   const initCookies = useChatStore((state) => state.initCookies);
 
   useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 1200);
-    const bootstrap = async () => {
-      await initCookies();
-    }
-    void bootstrap();
-  }, []);
+    const t = window.setTimeout(() => setVisible(true), 1200);
+
+    void initCookies();
+
+    return () => {
+      window.clearTimeout(t);
+    };
+  }, [initCookies]);
 
   const accept = () => {
     setVisible(false);
