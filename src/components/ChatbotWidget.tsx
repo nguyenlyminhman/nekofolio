@@ -20,7 +20,7 @@ const initialMessage: Message = {
 };
 
 const STREAM_FRAME_MS = 16;
-const STREAM_CHARS_PER_FRAME = 2;
+const STREAM_CHARS_PER_FRAME = 4;
 
 const ChatbotWidget = () => {
   const fetchHistory = useChatStore((state) => state.fetchHistory);
@@ -84,7 +84,7 @@ const ChatbotWidget = () => {
   }, []);
 
   const clearStreamTimer = useCallback(() => {
-    if (streamTimerRef.current) {
+    if (streamTimerRef.current !== null) {
       window.clearTimeout(streamTimerRef.current);
       streamTimerRef.current = null;
     }
@@ -101,9 +101,8 @@ const ChatbotWidget = () => {
     setIsTyping(false);
     setStreamingBotMsgId(null);
 
-    fetchHistory().catch(console.error);
     focusTextarea();
-  }, [clearStreamTimer, closeSSE, fetchHistory, focusTextarea]);
+  }, [clearStreamTimer, closeSSE, focusTextarea]);
 
   const flushStreamBuffer = useCallback(() => {
     const botMsgId = activeBotMessageIdRef.current;
@@ -145,20 +144,20 @@ const ChatbotWidget = () => {
     (chunk: string) => {
       streamBufferRef.current += chunk;
 
-      if (!streamTimerRef.current) {
+      if (streamTimerRef.current === null) {
         streamTimerRef.current = window.setTimeout(() => {
-        flushStreamBufferRef.current();
-      }, STREAM_FRAME_MS);
+          flushStreamBufferRef.current();
+        }, 0);
       }
     },
-    [flushStreamBuffer]
+    []
   );
 
   const terminateStream = useCallback(() => {
     if (streamBufferRef.current.length > 0) {
       isStreamDoneRef.current = true;
 
-      if (!streamTimerRef.current) {
+      if (streamTimerRef.current === null) {
         flushStreamBufferRef.current();
       }
 
@@ -284,7 +283,20 @@ const ChatbotWidget = () => {
       content: m.content,
     }));
 
-    setMessages([initialMessage, ...historyMsgs]);
+    setMessages((prev) => {
+      const existingIds = new Set(prev.map((m) => m.id));
+      const missingHistoryMsgs = historyMsgs.filter((m) => !existingIds.has(m.id));
+
+      if (prev.length === 1 && prev[0]?.id === initialMessage.id) {
+        return [initialMessage, ...historyMsgs];
+      }
+
+      if (missingHistoryMsgs.length === 0) {
+        return prev;
+      }
+
+      return [...prev, ...missingHistoryMsgs];
+    });
   }, [isTyping, message]);
 
   useEffect(() => {
