@@ -187,9 +187,15 @@ const ChatbotWidget = () => {
       setMessages((prev) => [...prev, { id: botMsgId, role: "bot", content: "" }]);
       scrollToBottom("smooth");
 
+      // Lấy sessionId từ cookie (BE set cookie "sessionId" qua withCredentials)
+      const sessionId = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("sessionId="))
+        ?.split("=")[1] ?? "";
+
       const sseUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/stream?message=${encodeURIComponent(
         userQuery
-      )}`;
+      )}${sessionId ? `&sessionId=${encodeURIComponent(sessionId)}` : ""}`;
 
       const es = new EventSource(sseUrl, { withCredentials: true });
       eventSourceRef.current = es;
@@ -206,6 +212,8 @@ const ChatbotWidget = () => {
           }
 
           if (data.done) {
+            // Đánh dấu stream đã hoàn thành trước khi đóng — tránh onerror giả
+            isStreamDoneRef.current = true;
             terminateStream();
             return;
           }
@@ -219,6 +227,10 @@ const ChatbotWidget = () => {
       };
 
       es.onerror = () => {
+        // Browser fire onerror khi server đóng SSE connection (bình thường sau done).
+        // Chỉ show lỗi nếu stream CHƯA hoàn thành.
+        if (isStreamDoneRef.current) return;
+
         streamBufferRef.current = "";
         updateBotMessage(
           botMsgId,
