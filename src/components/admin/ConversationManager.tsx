@@ -51,6 +51,9 @@ export function ConversationManager() {
   const [configInteresting, setConfigInteresting] = useState<boolean>(false);
   const [configCompanyHintPreview, setConfigCompanyHintPreview] = useState("");
   const [configSaving, setConfigSaving] = useState(false);
+  const [totalConv, setTotalConv] = useState(0);
+  const [totalConvHasMsg, setTotalConvHasMsg] = useState(0);
+  const [totalConvNoMsg, setTotalConvNoMsg] = useState(0);
 
   const selectedRow = useMemo(
     () => rows.find((r) => r.conversation?.id === selectedConversationId) ?? null,
@@ -72,8 +75,16 @@ export function ConversationManager() {
   const loadList = useCallback(async () => {
     setListLoading(true);
     try {
-      const data = await fetchConversationList();
+      const dataMsg = await fetchConversationList();
+      const data = dataMsg.filter(item => item.conversation.message_count > 0);
+
+      const hasMsg = data.length;
+      const noMsg = dataMsg.length - hasMsg;
+
       setRows(data);
+      setTotalConv(dataMsg.length);
+      setTotalConvNoMsg(noMsg);
+      setTotalConvHasMsg(hasMsg);
     } catch (e) {
       toast({
         variant: "destructive",
@@ -195,13 +206,44 @@ export function ConversationManager() {
   return (
     <div className="flex min-h-0 flex-1 w-full flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        {/* <div>
           <h1 className="text-2xl font-bold tracking-tight">Quản hội thoại</h1>
           <p className="text-sm text-muted-foreground">
-            <code className="rounded bg-muted px-1 text-xs">GET /cms/conv/fetch</code>
+            <code className="rounded bg-muted px-1 text-xs">Tổng hội thoại: {totalConv} </code>
             {" · "}
-            <code className="rounded bg-muted px-1 text-xs">GET /cms/conv/content?id=…</code>
+            <code className="rounded bg-muted px-1 text-xs">Có tin nhắn: {totalConvHasMsg} </code>
+            {" · "}
+            <code className="rounded bg-muted px-1 text-xs">Chưa có tin nhắn: {totalConvNoMsg} </code>
           </p>
+        </div> */}
+
+        <div className="space-y-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              Quản lý hội thoại
+            </h1>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-sm">
+              <span className="text-blue-300">Tổng</span>
+              <span className="ml-2 font-semibold text-white">{totalConv}</span>
+            </div>
+
+            <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-sm">
+              <span className="text-emerald-300">Có tin nhắn</span>
+              <span className="ml-2 font-semibold text-white">
+                {totalConvHasMsg}
+              </span>
+            </div>
+
+            <div className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-sm">
+              <span className="text-amber-300">Chưa có tin nhắn</span>
+              <span className="ml-2 font-semibold text-white">
+                {totalConvNoMsg}
+              </span>
+            </div>
+          </div>
         </div>
         <Button
           type="button"
@@ -301,18 +343,16 @@ export function ConversationManager() {
                       <button
                         type="button"
                         onClick={() => setSelectedConversationId(cid)}
-                        className={`flex w-full gap-2 rounded-md border px-2 py-2 text-left text-sm transition-colors hover:bg-accent/60 ${
-                          active ? "border-primary/50 bg-primary/10" : "border-transparent bg-muted/30"
-                        }`}
+                        className={`flex w-full gap-2 rounded-md border px-2 py-2 text-left text-sm transition-colors hover:bg-accent/60 ${active ? "border-primary/50 bg-primary/10" : "border-transparent bg-muted/30"
+                          }`}
                       >
                         <Star
-                          className={`mt-0.5 h-4 w-4 shrink-0 ${
-                            row.is_interesting === true
+                          className={`mt-0.5 h-4 w-4 shrink-0 ${row.is_interesting === true
                               ? "fill-amber-400 text-amber-400"
                               : row.is_interesting === false
                                 ? "fill-emerald-500 text-emerald-500"
                                 : "fill-muted-foreground/35 text-muted-foreground/50"
-                          }`}
+                            }`}
                           aria-hidden
                         />
                         <span className="min-w-0 flex-1">
@@ -346,9 +386,8 @@ export function ConversationManager() {
                   return (
                     <div key={m.id} className={`flex ${isHr ? "justify-end" : "justify-start"}`}>
                       <div
-                        className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                          isHr ? "bg-primary text-primary-foreground" : "bg-card text-card-foreground ring-1 ring-border"
-                        }`}
+                        className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${isHr ? "bg-primary text-primary-foreground" : "bg-card text-card-foreground ring-1 ring-border"
+                          }`}
                       >
                         <p className="whitespace-pre-wrap break-words leading-relaxed">{m.content}</p>
                         <time className="mt-1 block text-[10px] opacity-80">
