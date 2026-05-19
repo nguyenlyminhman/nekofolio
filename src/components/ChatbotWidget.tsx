@@ -419,7 +419,15 @@ const ChatbotWidget = () => {
             </div>
 
             {/* Messages */}
-            <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+            <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4 
+                scrollbar-thin
+                scrollbar-thumb-rounded-full
+                scrollbar-track-rounded-full
+
+                scrollbar-track-transparent
+                scrollbar-thumb-primary/50
+                hover:scrollbar-thumb-primary/50
+              ">
               {messages.map((m) => {
                 const isCurrentStreamingBotMessage = m.id === streamingBotMsgId;
                 const showTypingDots = isTyping && isCurrentStreamingBotMessage && m.content === "";
@@ -433,11 +441,10 @@ const ChatbotWidget = () => {
                     className={`flex ${m.role === "hr" ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                        m.role === "hr"
+                      className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${m.role === "hr"
                           ? "bg-primary text-primary-foreground"
                           : "bg-secondary border text-foreground"
-                      }`}
+                        }`}
                     >
                       <div className="prose prose-sm dark:prose-invert break-words whitespace-pre-line">
                         {m.content}
