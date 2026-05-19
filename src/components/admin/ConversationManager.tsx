@@ -76,7 +76,7 @@ export function ConversationManager() {
     setListLoading(true);
     try {
       const dataMsg = await fetchConversationList();
-      const data = dataMsg.filter(item => item.conversation.message_count > 0);
+      const data = dataMsg.filter(item => item.conversation?.message_count > 0);
 
       const hasMsg = data.length;
       const noMsg = dataMsg.length - hasMsg;
