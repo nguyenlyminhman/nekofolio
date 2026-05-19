@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, X, Send, FileText, CalendarCheck, Cpu } from "lucide-react";
+import { Bot, X, Send } from "lucide-react";
 import { useChatStore } from "@/stores";
 
 type Message = {
@@ -11,6 +11,7 @@ type Message = {
 };
 
 const BOT_NAME = "Neko";
+const STREAM_CHARS_PER_FRAME = 2;
 
 const initialMessage: Message = {
   id: "welcome",
@@ -32,6 +33,12 @@ const ChatbotWidget = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Tách network stream khỏi UI render để chữ hiện ra mượt như ChatGPT.
+  const streamBufferRef = useRef("");
+  const animationFrameRef = useRef<number | null>(null);
+  const activeBotMessageIdRef = useRef<string | null>(null);
+  const streamDoneRef = useRef(false);
+
   const closeSSE = () => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
@@ -39,13 +46,75 @@ const ChatbotWidget = () => {
     }
   };
 
+  const stopTypingAnimation = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  };
+
+  const updateBotMessage = (id: string, content: string) => {
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, content } : m)));
+  };
+
+  const finishStream = () => {
+    closeSSE();
+    stopTypingAnimation();
+    streamBufferRef.current = "";
+    activeBotMessageIdRef.current = null;
+    streamDoneRef.current = false;
+    setIsTyping(false);
+    fetchHistory().catch(console.error);
+  };
+
+  const flushStreamBuffer = () => {
+    const botMsgId = activeBotMessageIdRef.current;
+
+    if (!botMsgId) {
+      stopTypingAnimation();
+      return;
+    }
+
+    const nextText = streamBufferRef.current.slice(0, STREAM_CHARS_PER_FRAME);
+    streamBufferRef.current = streamBufferRef.current.slice(STREAM_CHARS_PER_FRAME);
+
+    if (nextText) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === botMsgId ? { ...m, content: m.content + nextText } : m
+        )
+      );
+    }
+
+    if (streamBufferRef.current.length > 0) {
+      animationFrameRef.current = requestAnimationFrame(flushStreamBuffer);
+      return;
+    }
+
+    animationFrameRef.current = null;
+
+    // Backend đã báo done, nhưng chờ UI render hết buffer rồi mới kết thúc.
+    if (streamDoneRef.current) {
+      finishStream();
+    }
+  };
+
+  const enqueueStreamText = (text: string) => {
+    streamBufferRef.current += text;
+
+    if (!animationFrameRef.current) {
+      animationFrameRef.current = requestAnimationFrame(flushStreamBuffer);
+    }
+  };
+
   useEffect(() => {
     const t = setTimeout(() => setOpen(true), 3000);
     fetchHistory().catch(console.error);
     return () => clearTimeout(t);
-  }, []);
+  }, [fetchHistory]);
 
   useEffect(() => {
+    if (isTyping) return;
     if (!message || !Array.isArray(message) || message.length === 0) return;
 
     const historyMsgs: Message[] = message.map((m) => ({
@@ -55,11 +124,21 @@ const ChatbotWidget = () => {
     }));
 
     setMessages([initialMessage, ...historyMsgs]);
-  }, [message]);
+  }, [message, isTyping]);
 
   useEffect(() => {
-    return () => closeSSE();
+    return () => {
+      closeSSE();
+      stopTypingAnimation();
+    };
   }, []);
+
+  const focusTextarea = () => {
+    // Đợi React cập nhật state/DOM xong rồi mới focus lại textarea.
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus({ preventScroll: true });
+    });
+  };
 
   const resetTextareaHeight = () => {
     if (textareaRef.current) {
@@ -74,23 +153,17 @@ const ChatbotWidget = () => {
     }
   };
 
-  const updateBotMessage = (id: string, content: string) => {
-    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, content } : m)));
-  };
-
-  const terminateStream = () => {
-    closeSSE();
-    setIsTyping(false);
-    fetchHistory().catch(console.error);
-  };
-
   const startStreaming = (userQuery: string) => {
     if (isTyping) return;
 
     closeSSE();
+    stopTypingAnimation();
+    streamBufferRef.current = "";
+    streamDoneRef.current = false;
     setIsTyping(true);
 
     const botMsgId = `${Date.now()}-bot`;
+    activeBotMessageIdRef.current = botMsgId;
     setMessages((prev) => [...prev, { id: botMsgId, role: "bot", content: "" }]);
 
     const sseUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/stream?message=${encodeURIComponent(userQuery)}`;
@@ -103,21 +176,22 @@ const ChatbotWidget = () => {
 
         if (data.error) {
           updateBotMessage(botMsgId, data.message);
-          terminateStream();
+          finishStream();
           return;
         }
 
         if (data.done) {
-          terminateStream();
+          streamDoneRef.current = true;
+          closeSSE();
+
+          if (!streamBufferRef.current && !animationFrameRef.current) {
+            finishStream();
+          }
           return;
         }
 
         if (data.chunk) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === botMsgId ? { ...m, content: m.content + data.chunk } : m
-            )
-          );
+          enqueueStreamText(data.chunk);
         }
       } catch (err) {
         console.error("Lỗi parse:", err);
@@ -129,7 +203,7 @@ const ChatbotWidget = () => {
         botMsgId,
         `Hình như đường truyền giữa chúng mình vừa có chút 'nấc cụt'. Bạn thử gửi lại tin nhắn giúp Neko nhé! ✨\nLooks like our connection just had a little 'hiccup.' Could you please resend that message for Neko? ✨`
       );
-      terminateStream();
+      finishStream();
     };
   };
 
@@ -144,15 +218,22 @@ const ChatbotWidget = () => {
     ]);
     setInput("");
     resetTextareaHeight();
+    focusTextarea();
     startStreaming(trimmed);
   };
 
-  // Auto-scroll khi messages thay đổi
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: isTyping ? "smooth" : "auto",
+    });
+  }, [messages, isTyping]);
+
+  useEffect(() => {
+    if (open && !isTyping) {
+      focusTextarea();
     }
-  }, [messages]);
+  }, [open, isTyping]);
 
   const handleOpen = () => {
     setOpen(true);
@@ -276,9 +357,12 @@ const ChatbotWidget = () => {
                   >
                     <div className="prose prose-sm dark:prose-invert break-words whitespace-pre-line">
                       {m.content}
+                      {isTyping && m.id === activeBotMessageIdRef.current && m.content !== "" && (
+                        <span className="ml-0.5 inline-block h-4 w-1 translate-y-0.5 animate-pulse rounded-sm bg-current" />
+                      )}
                     </div>
 
-                    {isTyping && m.id.endsWith("-bot") && m.content === "" && (
+                    {isTyping && m.id === activeBotMessageIdRef.current && m.content === "" && (
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <span>Neko is typing</span>
                         <span className="w-1 h-1 rounded-full bg-current animate-bounce" />
@@ -317,10 +401,10 @@ const ChatbotWidget = () => {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      handleSubmit(e as any);
+                      handleSubmit(e as unknown as React.FormEvent);
                     }
                   }}
-                  className="flex-1 resize-none overflow-y-auto bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none px-4 py-3 min-h-[48px] max-h-40 disabled:opacity-50"
+                  className="flex-1 resize-none overflow-y-auto bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none px-4 py-3 min-h-[48px] max-h-40"
                 />
                 <button
                   type="submit"
