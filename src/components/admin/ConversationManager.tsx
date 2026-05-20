@@ -96,7 +96,7 @@ export function ConversationManager() {
       
       setTotalConvNoMsg(noMsg);
       setTotalConvHasMsg(hasMsg);
-      setTotalConvToday(90);
+      setTotalConvToday(dataToday.length);
     } catch (e) {
       toast({
         variant: "destructive",
