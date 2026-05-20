@@ -27,7 +27,7 @@ export function AdminDashboardShell() {
           >
             <div
               className={cn(
-                activeMenu === "conv" ? "flex min-h-0 min-w-0 flex-1 flex-col" : "mx-auto max-w-5xl",
+                activeMenu === "conv" ? "flex min-h-0 min-w-0 flex-1 flex-col" : "mx-auto",
               )}
             >
               {activeMenu === "cv" ? (
