@@ -76,11 +76,11 @@ export function ConversationManager() {
 
   const loadList = useCallback(async () => {
     setListLoading(true);
-    const today = new Date().toISOString().split('T')[0]; // "2026-05-18"
+    
     try {
       const dataMsg = await fetchConversationList();
       const data = dataMsg.filter(item => item.conversation.message_count > 0);
-
+      const today = new Date().toISOString().split('T')[0]; // "2026-05-18"
       const dataToday = dataMsgs.filter(item => {
         const lastMsg = item.conversation?.last_message_at;
         return lastMsg && lastMsg.split('T')[0] === today;
