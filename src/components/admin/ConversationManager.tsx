@@ -54,6 +54,8 @@ export function ConversationManager() {
   const [totalConv, setTotalConv] = useState(0);
   const [totalConvHasMsg, setTotalConvHasMsg] = useState(0);
   const [totalConvNoMsg, setTotalConvNoMsg] = useState(0);
+  const [dataMsgs, setDataMsgs] = useState<ConversationVisitorRow[]>([]);
+  const [totalConvToday, setTotalConvToday] = useState(0);
 
   const selectedRow = useMemo(
     () => rows.find((r) => r.conversation?.id === selectedConversationId) ?? null,
@@ -74,17 +76,27 @@ export function ConversationManager() {
 
   const loadList = useCallback(async () => {
     setListLoading(true);
+    const today = new Date().toISOString().split('T')[0]; // "2026-05-18"
     try {
       const dataMsg = await fetchConversationList();
-      const data = dataMsg.filter(item => item.conversation?.message_count > 0);
+      const data = dataMsg.filter(item => item.conversation.message_count > 0);
+
+      const dataToday = dataMsgs.filter(item => {
+        const lastMsg = item.conversation?.last_message_at;
+        return lastMsg && lastMsg.split('T')[0] === today;
+      })
 
       const hasMsg = data.length;
       const noMsg = dataMsg.length - hasMsg;
 
       setRows(data);
+
+      setDataMsgs(dataMsg);
       setTotalConv(dataMsg.length);
+      
       setTotalConvNoMsg(noMsg);
       setTotalConvHasMsg(hasMsg);
+      setTotalConvToday(dataToday.length);
     } catch (e) {
       toast({
         variant: "destructive",
@@ -201,43 +213,130 @@ export function ConversationManager() {
     }
   };
 
+  const handleLoadConvHasMsg = () => {
+    const data = dataMsgs.filter(item => item.conversation?.message_count > 0);
+    setRows(data);
+  }
+  
+  const handleLoadConvNoMsg = () => {
+    const data = dataMsgs.filter(item => item.conversation?.message_count == 0);
+    setRows(data);
+  }
+
+  const handleLoadAllConvMsg = async () => {
+    await loadList();
+  }
+
+  const handleLoadTodayConvMsg = () => {
+    const today = new Date().toISOString().split('T')[0]; // "2026-05-18"
+
+    const dataToday = rows.filter(item => {
+      const lastMsg = item.conversation?.last_message_at;
+      return lastMsg && lastMsg.split('T')[0] === today;
+    })
+
+    const dataMsgToday = dataToday.filter(item => item.conversation.message_count > 0);
+
+    const hasMsgToday = dataMsgToday.length;
+    const noMsgToday = dataToday.length - hasMsgToday;
+
+    setDataMsgs(dataToday);
+    setTotalConvNoMsg(noMsgToday);
+    setTotalConvHasMsg(hasMsgToday);
+  }
+
+
   const canConfigure = Boolean(selectedConversationId && selectedRow);
 
   return (
     <div className="flex min-h-0 flex-1 w-full flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        {/* <div>
-          <h1 className="text-2xl font-bold tracking-tight">Quản hội thoại</h1>
-          <p className="text-sm text-muted-foreground">
-            <code className="rounded bg-muted px-1 text-xs">Tổng hội thoại: {totalConv} </code>
-            {" · "}
-            <code className="rounded bg-muted px-1 text-xs">Có tin nhắn: {totalConvHasMsg} </code>
-            {" · "}
-            <code className="rounded bg-muted px-1 text-xs">Chưa có tin nhắn: {totalConvNoMsg} </code>
-          </p>
-        </div> */}
-
         <div className="space-y-3">
-          <div>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-2xl font-bold tracking-tight text-white">
               Quản lý hội thoại
             </h1>
+
+            <div
+              className="
+                rounded-full
+                border border-cyan-500/30
+                bg-cyan-500/15
+                px-3 py-1
+                text-sm
+                cursor-pointer
+                transition-all duration-200
+                shadow-sm
+                shadow-cyan-500/10
+                hover:bg-cyan-500/20
+                hover:border-cyan-500/50
+                hover:shadow-sm
+                active:scale-95
+              "
+              onClick={() => void handleLoadTodayConvMsg()}
+            >
+              <span className="text-cyan-300">Hôm nay: </span>
+              <span className="ml-2 font-semibold text-white">
+                { totalConvToday }
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-sm">
+            <div
+              className="
+                rounded-full
+                border border-blue-500/20
+                bg-blue-500/10
+                px-3 py-1
+                text-sm
+                cursor-pointer
+                transition-all duration-200
+                hover:bg-blue-500/20
+                hover:border-blue-500/40
+                hover:shadow-sm
+                active:scale-95
+              "
+              onClick={() => void handleLoadAllConvMsg()}
+            >
               <span className="text-blue-300">Tổng</span>
               <span className="ml-2 font-semibold text-white">{totalConv}</span>
             </div>
 
-            <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-sm">
+            <div className=" 
+              rounded-full
+              border border-emerald-500/20
+              bg-emerald-500/10
+              px-3 py-1
+              text-sm
+              cursor-pointer
+              transition-all duration-200
+              hover:bg-emerald-500/20
+              hover:border-emerald-500/40
+              hover:shadow-sm
+              active:scale-95
+            "
+              onClick={() => void handleLoadConvHasMsg()}>
               <span className="text-emerald-300">Có tin nhắn</span>
               <span className="ml-2 font-semibold text-white">
                 {totalConvHasMsg}
               </span>
             </div>
 
-            <div className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-sm">
+            <div className="
+              rounded-full
+              border border-amber-500/20
+              bg-amber-500/10
+              px-3 py-1
+              text-sm
+              cursor-pointer
+              transition-all duration-200
+              hover:bg-amber-500/20
+              hover:border-amber-500/40
+              hover:shadow-sm
+              active:scale-95
+              "
+              onClick={() => void handleLoadConvNoMsg()}>
               <span className="text-amber-300">Chưa có tin nhắn</span>
               <span className="ml-2 font-semibold text-white">
                 {totalConvNoMsg}
@@ -348,10 +447,10 @@ export function ConversationManager() {
                       >
                         <Star
                           className={`mt-0.5 h-4 w-4 shrink-0 ${row.is_interesting === true
-                              ? "fill-amber-400 text-amber-400"
-                              : row.is_interesting === false
-                                ? "fill-emerald-500 text-emerald-500"
-                                : "fill-muted-foreground/35 text-muted-foreground/50"
+                            ? "fill-amber-400 text-amber-400"
+                            : row.is_interesting === false
+                              ? "fill-emerald-500 text-emerald-500"
+                              : "fill-muted-foreground/35 text-muted-foreground/50"
                             }`}
                           aria-hidden
                         />
