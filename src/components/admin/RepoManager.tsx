@@ -160,7 +160,7 @@ export function RepoManager() {
 
       toast({
         title: "Import thành công",
-        description: `Đã import ${imported.length} repo.`,
+        description: `Đã import ${imported} repo.`,
       });
 
       await refreshList();

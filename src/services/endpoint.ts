@@ -7,6 +7,7 @@ export const endpoint = axios.create({
   withCredentials: true,
 });
 
+// REQUEST
 endpoint.interceptors.request.use((config) => {
   if (typeof window === "undefined") {
     return config;
@@ -17,3 +18,23 @@ endpoint.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// RESPONSE
+endpoint.interceptors.response.use(
+  (response) => response,
+
+  async (error) => {
+    const status = error?.response?.status;
+
+    // Token expired / invalid  
+    if ( status === 401 && typeof window !== "undefined" ) {
+      localStorage.removeItem(ADMIN_AUTH_TOKEN_STORAGE_KEY);
+
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
