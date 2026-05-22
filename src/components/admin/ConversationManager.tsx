@@ -36,7 +36,11 @@ function listItemLabel(row: ConversationVisitorRow): string {
 
 export function ConversationManager() {
   const { toast } = useToast();
+  const [allData, setAllData] = useState<ConversationVisitorRow[]>([]);
+  const [workingSet, setWorkingSet] = useState<ConversationVisitorRow[]>([]);
+
   const [rows, setRows] = useState<ConversationVisitorRow[]>([]);
+
   const [listLoading, setListLoading] = useState(true);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
@@ -51,11 +55,24 @@ export function ConversationManager() {
   const [configInteresting, setConfigInteresting] = useState<boolean>(false);
   const [configCompanyHintPreview, setConfigCompanyHintPreview] = useState("");
   const [configSaving, setConfigSaving] = useState(false);
-  const [totalConv, setTotalConv] = useState(0);
-  const [totalConvHasMsg, setTotalConvHasMsg] = useState(0);
-  const [totalConvNoMsg, setTotalConvNoMsg] = useState(0);
-  const [dataMsgs, setDataMsgs] = useState<ConversationVisitorRow[]>([]);
-  const [totalConvToday, setTotalConvToday] = useState(0);
+
+  const totalConv = workingSet.length;
+  const totalConvHasMsg = useMemo(
+    () => workingSet.filter((item) => item.conversation?.message_count > 0).length,
+    [workingSet],
+  );
+  const totalConvNoMsg = useMemo(
+    () => workingSet.filter((item) => !(item.conversation?.message_count > 0)).length,
+    [workingSet],
+  );
+
+  const totalConvToday = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    return allData.filter((item) => {
+      const lastMsg = item.conversation?.last_message_at;
+      return lastMsg && lastMsg.split("T")[0] === today;
+    }).length;
+  }, [allData]);
 
   const selectedRow = useMemo(
     () => rows.find((r) => r.conversation?.id === selectedConversationId) ?? null,
@@ -74,40 +91,31 @@ export function ConversationManager() {
     }
   }, [configOpen, selectedRow, syncConfigFormFromRow]);
 
+  const applyWorkingSet = useCallback((data: ConversationVisitorRow[]) => {
+    setWorkingSet(data);
+    const hasMsg = data.filter((item) => item.conversation?.message_count > 0);
+    setRows(hasMsg);
+  }, []);
+
   const loadList = useCallback(async () => {
     setListLoading(true);
-    
     try {
-      const dataMsg = await fetchConversationList();
-      const data = dataMsg.filter(item => item.conversation?.message_count > 0);
-      const today = new Date().toISOString().split('T')[0]; // "2026-05-18"
-      const dataToday = dataMsgs.filter(item => {
-        const lastMsg = item.conversation?.last_message_at;
-        return lastMsg && lastMsg.split('T')[0] === today;
-      })
-
-      const hasMsg = data.length;
-      const noMsg = dataMsg.length - hasMsg;
-
-      setRows(data);
-
-      setDataMsgs(dataMsg);
-      setTotalConv(dataMsg.length);
-      
-      setTotalConvNoMsg(noMsg);
-      setTotalConvHasMsg(hasMsg);
-      setTotalConvToday(dataToday.length);
+      const data = await fetchConversationList();
+      setAllData(data);
+      applyWorkingSet(data);
     } catch (e) {
       toast({
         variant: "destructive",
         title: "Không tải được danh sách hội thoại",
         description: e instanceof Error ? e.message : "Lỗi không xác định",
       });
+      setAllData([]);
+      setWorkingSet([]);
       setRows([]);
     } finally {
       setListLoading(false);
     }
-  }, [toast]);
+  }, [toast, applyWorkingSet]);
 
   useEffect(() => {
     void loadList();
@@ -127,9 +135,7 @@ export function ConversationManager() {
     setMessagesLoading(true);
     void fetchConversationMessages(selectedConversationId)
       .then((list) => {
-        if (!cancelled) {
-          setMessages(list);
-        }
+        if (!cancelled) setMessages(list);
       })
       .catch((e: unknown) => {
         if (!cancelled) {
@@ -142,9 +148,7 @@ export function ConversationManager() {
         }
       })
       .finally(() => {
-        if (!cancelled) {
-          setMessagesLoading(false);
-        }
+        if (!cancelled) setMessagesLoading(false);
       });
 
     return () => {
@@ -164,7 +168,9 @@ export function ConversationManager() {
       await loadList();
       setRows((prev) =>
         prev.map((r) =>
-          r.conversation?.id === selectedConversationId ? { ...r, conversation: { ...r.conversation, comment: commentDraft } } : r,
+          r.conversation?.id === selectedConversationId
+            ? { ...r, conversation: { ...r.conversation, comment: commentDraft } }
+            : r,
         ),
       );
     } catch (e) {
@@ -188,9 +194,7 @@ export function ConversationManager() {
   };
 
   const handleSaveConfig = async () => {
-    if (!selectedRow) {
-      return;
-    }
+    if (!selectedRow) return;
     const visitorId = selectedRow.id;
     setConfigSaving(true);
     try {
@@ -214,37 +218,27 @@ export function ConversationManager() {
   };
 
   const handleLoadConvHasMsg = () => {
-    const data = dataMsgs.filter(item => item.conversation?.message_count > 0);
-    setRows(data);
-  }
-  
+    const hasMsg = workingSet.filter((item) => item.conversation?.message_count > 0);
+    setRows(hasMsg);
+  };
+
   const handleLoadConvNoMsg = () => {
-    const data = dataMsgs.filter(item => item.conversation?.message_count == 0);
-    setRows(data);
-  }
+    const noMsg = workingSet.filter((item) => !(item.conversation?.message_count > 0));
+    setRows(noMsg);
+  };
 
   const handleLoadAllConvMsg = async () => {
     await loadList();
-  }
+  };
 
   const handleLoadTodayConvMsg = () => {
-    const today = new Date().toISOString().split('T')[0]; // "2026-05-18"
-
-    const dataToday = rows.filter(item => {
+    const today = new Date().toISOString().split("T")[0];
+    const todayData = allData.filter((item) => {
       const lastMsg = item.conversation?.last_message_at;
-      return lastMsg && lastMsg.split('T')[0] === today;
-    })
-
-    const dataMsgToday = dataToday.filter(item => item.conversation?.message_count > 0);
-
-    const hasMsgToday = dataMsgToday.length;
-    const noMsgToday = dataToday.length - hasMsgToday;
-
-    setDataMsgs(dataToday);
-    setTotalConvNoMsg(noMsgToday);
-    setTotalConvHasMsg(hasMsgToday);
-  }
-
+      return lastMsg && lastMsg.split("T")[0] === today;
+    });
+    applyWorkingSet(todayData);
+  };
 
   const canConfigure = Boolean(selectedConversationId && selectedRow);
 
@@ -273,12 +267,10 @@ export function ConversationManager() {
                 hover:shadow-sm
                 active:scale-95
               "
-              onClick={() => void handleLoadTodayConvMsg()}
+              onClick={handleLoadTodayConvMsg}
             >
               <span className="text-cyan-300">Hôm nay: </span>
-              <span className="ml-2 font-semibold text-white">
-                { totalConvToday }
-              </span>
+              <span className="ml-2 font-semibold text-white">{totalConvToday}</span>
             </div>
           </div>
 
@@ -303,47 +295,48 @@ export function ConversationManager() {
               <span className="ml-2 font-semibold text-white">{totalConv}</span>
             </div>
 
-            <div className=" 
-              rounded-full
-              border border-emerald-500/20
-              bg-emerald-500/10
-              px-3 py-1
-              text-sm
-              cursor-pointer
-              transition-all duration-200
-              hover:bg-emerald-500/20
-              hover:border-emerald-500/40
-              hover:shadow-sm
-              active:scale-95
-            "
-              onClick={() => void handleLoadConvHasMsg()}>
+            <div
+              className="
+                rounded-full
+                border border-emerald-500/20
+                bg-emerald-500/10
+                px-3 py-1
+                text-sm
+                cursor-pointer
+                transition-all duration-200
+                hover:bg-emerald-500/20
+                hover:border-emerald-500/40
+                hover:shadow-sm
+                active:scale-95
+              "
+              onClick={handleLoadConvHasMsg}
+            >
               <span className="text-emerald-300">Có tin nhắn</span>
-              <span className="ml-2 font-semibold text-white">
-                {totalConvHasMsg}
-              </span>
+              <span className="ml-2 font-semibold text-white">{totalConvHasMsg}</span>
             </div>
 
-            <div className="
-              rounded-full
-              border border-amber-500/20
-              bg-amber-500/10
-              px-3 py-1
-              text-sm
-              cursor-pointer
-              transition-all duration-200
-              hover:bg-amber-500/20
-              hover:border-amber-500/40
-              hover:shadow-sm
-              active:scale-95
+            <div
+              className="
+                rounded-full
+                border border-amber-500/20
+                bg-amber-500/10
+                px-3 py-1
+                text-sm
+                cursor-pointer
+                transition-all duration-200
+                hover:bg-amber-500/20
+                hover:border-amber-500/40
+                hover:shadow-sm
+                active:scale-95
               "
-              onClick={() => void handleLoadConvNoMsg()}>
+              onClick={handleLoadConvNoMsg}
+            >
               <span className="text-amber-300">Chưa có tin nhắn</span>
-              <span className="ml-2 font-semibold text-white">
-                {totalConvNoMsg}
-              </span>
+              <span className="ml-2 font-semibold text-white">{totalConvNoMsg}</span>
             </div>
           </div>
         </div>
+
         <Button
           type="button"
           variant="outline"
@@ -362,7 +355,8 @@ export function ConversationManager() {
           <DialogHeader>
             <DialogTitle>Cấu hình hội thoại</DialogTitle>
             <DialogDescription>
-              Cập nhật User Agent và Interesting. Company Hint chỉ xem.{selectedRow?.conversation?.id && (
+              Cập nhật User Agent và Interesting. Company Hint chỉ xem.
+              {selectedRow?.conversation?.id && (
                 <>
                   {" "}
                   <span className="font-mono text-xs">conversation: {selectedRow.conversation.id}</span>
@@ -432,31 +426,33 @@ export function ConversationManager() {
               <ul className="space-y-1 pr-3">
                 {rows.map((row) => {
                   const cid = row.conversation?.id;
-                  const lastSeen = row?.last_seen_at?.toString() ?? ''
-                  if (!cid) {
-                    return null;
-                  }
+                  const lastSeen = row?.last_seen_at?.toString() ?? "";
+                  if (!cid) return null;
                   const active = selectedConversationId === cid;
                   return (
                     <li key={`${row.id}-${cid}`}>
                       <button
                         type="button"
                         onClick={() => setSelectedConversationId(cid)}
-                        className={`flex w-full gap-2 rounded-md border px-2 py-2 text-left text-sm transition-colors hover:bg-accent/60 ${active ? "border-primary/50 bg-primary/10" : "border-transparent bg-muted/30"
-                          }`}
+                        className={`flex w-full gap-2 rounded-md border px-2 py-2 text-left text-sm transition-colors hover:bg-accent/60 ${
+                          active ? "border-primary/50 bg-primary/10" : "border-transparent bg-muted/30"
+                        }`}
                       >
                         <Star
-                          className={`mt-0.5 h-4 w-4 shrink-0 ${row.is_interesting === true
-                            ? "fill-amber-400 text-amber-400"
-                            : row.is_interesting === false
-                              ? "fill-emerald-500 text-emerald-500"
-                              : "fill-muted-foreground/35 text-muted-foreground/50"
-                            }`}
+                          className={`mt-0.5 h-4 w-4 shrink-0 ${
+                            row.is_interesting === true
+                              ? "fill-amber-400 text-amber-400"
+                              : row.is_interesting === false
+                                ? "fill-emerald-500 text-emerald-500"
+                                : "fill-muted-foreground/35 text-muted-foreground/50"
+                          }`}
                           aria-hidden
                         />
                         <span className="min-w-0 flex-1">
                           <span className="line-clamp-2 font-medium leading-tight">{listItemLabel(row)}</span>
-                          <span className="mt-1 block truncate text-[10px] text-muted-foreground">{new Date(lastSeen).toLocaleString()}</span>
+                          <span className="mt-1 block truncate text-[10px] text-muted-foreground">
+                            {new Date(lastSeen).toLocaleString()}
+                          </span>
                         </span>
                       </button>
                     </li>
@@ -485,8 +481,11 @@ export function ConversationManager() {
                   return (
                     <div key={m.id} className={`flex ${isHr ? "justify-end" : "justify-start"}`}>
                       <div
-                        className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${isHr ? "bg-primary text-primary-foreground" : "bg-card text-card-foreground ring-1 ring-border"
-                          }`}
+                        className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                          isHr
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-card text-card-foreground ring-1 ring-border"
+                        }`}
                       >
                         <p className="whitespace-pre-wrap break-words leading-relaxed">{m.content}</p>
                         <time className="mt-1 block text-[10px] opacity-80">
@@ -516,7 +515,7 @@ export function ConversationManager() {
           <CardContent className="flex flex-1 flex-col gap-3 px-4 pb-4">
             <Textarea
               className="min-h-[160px] flex-1 resize-y text-sm"
-              placeholder='Comment (conversation.comment)'
+              placeholder="Comment (conversation.comment)"
               value={commentDraft}
               onChange={(e) => setCommentDraft(e.target.value)}
               disabled={!selectedConversationId || messagesLoading}
