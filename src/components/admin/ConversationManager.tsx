@@ -56,7 +56,15 @@ export function ConversationManager() {
   const [configCompanyHintPreview, setConfigCompanyHintPreview] = useState("");
   const [configSaving, setConfigSaving] = useState(false);
 
-  const totalConv = workingSet.length;
+  const totalConv = allData.length;
+  const totalConvToday = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    return allData.filter((item) => {
+      const lastMsg = item.conversation?.last_message_at;
+      return lastMsg && lastMsg.split("T")[0] === today;
+    }).length;
+  }, [allData]);
+
   const totalConvHasMsg = useMemo(
     () => workingSet.filter((item) => item.conversation?.message_count > 0).length,
     [workingSet],
@@ -65,14 +73,6 @@ export function ConversationManager() {
     () => workingSet.filter((item) => !(item.conversation?.message_count > 0)).length,
     [workingSet],
   );
-
-  const totalConvToday = useMemo(() => {
-    const today = new Date().toISOString().split("T")[0];
-    return allData.filter((item) => {
-      const lastMsg = item.conversation?.last_message_at;
-      return lastMsg && lastMsg.split("T")[0] === today;
-    }).length;
-  }, [allData]);
 
   const selectedRow = useMemo(
     () => rows.find((r) => r.conversation?.id === selectedConversationId) ?? null,
@@ -217,16 +217,6 @@ export function ConversationManager() {
     }
   };
 
-  const handleLoadConvHasMsg = () => {
-    const hasMsg = workingSet.filter((item) => item.conversation?.message_count > 0);
-    setRows(hasMsg);
-  };
-
-  const handleLoadConvNoMsg = () => {
-    const noMsg = workingSet.filter((item) => !(item.conversation?.message_count > 0));
-    setRows(noMsg);
-  };
-
   const handleLoadAllConvMsg = async () => {
     await loadList();
   };
@@ -238,6 +228,16 @@ export function ConversationManager() {
       return lastMsg && lastMsg.split("T")[0] === today;
     });
     applyWorkingSet(todayData);
+  };
+
+  const handleLoadConvHasMsg = () => {
+    const hasMsg = workingSet.filter((item) => item.conversation?.message_count > 0);
+    setRows(hasMsg);
+  };
+
+  const handleLoadConvNoMsg = () => {
+    const noMsg = workingSet.filter((item) => !(item.conversation?.message_count > 0));
+    setRows(noMsg);
   };
 
   const canConfigure = Boolean(selectedConversationId && selectedRow);
@@ -253,19 +253,10 @@ export function ConversationManager() {
 
             <div
               className="
-                rounded-full
-                border border-cyan-500/30
-                bg-cyan-500/15
-                px-3 py-1
-                text-sm
-                cursor-pointer
-                transition-all duration-200
-                shadow-sm
-                shadow-cyan-500/10
-                hover:bg-cyan-500/20
-                hover:border-cyan-500/50
-                hover:shadow-sm
-                active:scale-95
+                rounded-full border border-cyan-500/30 bg-cyan-500/15
+                px-3 py-1 text-sm cursor-pointer transition-all duration-200
+                shadow-sm shadow-cyan-500/10 hover:bg-cyan-500/20
+                hover:border-cyan-500/50 hover:shadow-sm active:scale-95
               "
               onClick={handleLoadTodayConvMsg}
             >
@@ -277,17 +268,9 @@ export function ConversationManager() {
           <div className="flex flex-wrap items-center gap-2">
             <div
               className="
-                rounded-full
-                border border-blue-500/20
-                bg-blue-500/10
-                px-3 py-1
-                text-sm
-                cursor-pointer
-                transition-all duration-200
-                hover:bg-blue-500/20
-                hover:border-blue-500/40
-                hover:shadow-sm
-                active:scale-95
+                rounded-full border border-blue-500/20 bg-blue-500/10
+                px-3 py-1 text-sm cursor-pointer transition-all duration-200
+                hover:bg-blue-500/20 hover:border-blue-500/40 hover:shadow-sm active:scale-95
               "
               onClick={() => void handleLoadAllConvMsg()}
             >
@@ -297,17 +280,9 @@ export function ConversationManager() {
 
             <div
               className="
-                rounded-full
-                border border-emerald-500/20
-                bg-emerald-500/10
-                px-3 py-1
-                text-sm
-                cursor-pointer
-                transition-all duration-200
-                hover:bg-emerald-500/20
-                hover:border-emerald-500/40
-                hover:shadow-sm
-                active:scale-95
+                rounded-full border border-emerald-500/20 bg-emerald-500/10
+                px-3 py-1 text-sm cursor-pointer transition-all duration-200
+                hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:shadow-sm active:scale-95
               "
               onClick={handleLoadConvHasMsg}
             >
@@ -317,17 +292,9 @@ export function ConversationManager() {
 
             <div
               className="
-                rounded-full
-                border border-amber-500/20
-                bg-amber-500/10
-                px-3 py-1
-                text-sm
-                cursor-pointer
-                transition-all duration-200
-                hover:bg-amber-500/20
-                hover:border-amber-500/40
-                hover:shadow-sm
-                active:scale-95
+                rounded-full border border-amber-500/20 bg-amber-500/10
+                px-3 py-1 text-sm cursor-pointer transition-all duration-200
+                hover:bg-amber-500/20 hover:border-amber-500/40 hover:shadow-sm active:scale-95
               "
               onClick={handleLoadConvNoMsg}
             >
