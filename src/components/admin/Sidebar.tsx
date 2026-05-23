@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { 
+  PanelLeftClose, 
+  PanelLeftOpen, 
+  Gauge,
+  FileText,
+  FolderGit2,
+  MessagesSquare 
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,12 +16,13 @@ import type { AdminMenuId } from "@/types/admin";
 
 const MENU_ITEMS: {
   id: AdminMenuId;
-  icon: string;
+  icon: any;
   label: string;
 }[] = [
-  { id: "cv", icon: "📄", label: "Quản lý CV" },
-  { id: "repo", icon: "📁", label: "Quản lý Repo" },
-  { id: "conv", icon: "💬", label: "Quản hội thoại" },
+  { id: "svd", icon: <Gauge className="h-4 w-4" />, label: "Dashboard" },
+  { id: "cv", icon: <FileText className="h-4 w-4" />, label: "Quản lý CV" },
+  { id: "repo", icon: <FolderGit2 className="h-4 w-4" />, label: "Quản lý Repo" },
+  { id: "conv", icon: <MessagesSquare className="h-4 w-4" />, label: "Quản hội thoại" },
 ];
 
 type SidebarProps = {

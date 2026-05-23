@@ -6,12 +6,13 @@ import { AdminBar } from "@/components/admin/AdminBar";
 import { ConversationManager } from "@/components/admin/ConversationManager";
 import { CVManager } from "@/components/admin/CVManager";
 import { RepoManager } from "@/components/admin/RepoManager";
+import { ServerDashboard } from "@/components/admin/ServerDashboard";
 import { Sidebar } from "@/components/admin/Sidebar";
 import { cn } from "@/lib/utils";
 import type { AdminMenuId } from "@/types/admin";
 
 export function AdminDashboardShell() {
-  const [activeMenu, setActiveMenu] = useState<AdminMenuId>("cv");
+  const [activeMenu, setActiveMenu] = useState<AdminMenuId>("svd");
 
   return (
     <div className="min-h-[calc(100vh-0px)] bg-background">
@@ -30,11 +31,13 @@ export function AdminDashboardShell() {
                 activeMenu === "conv" ? "flex min-h-0 min-w-0 flex-1 flex-col" : "mx-auto",
               )}
             >
-              {activeMenu === "cv" ? (
-                <CVManager />
-              ) : activeMenu === "repo" ? (
-                <RepoManager />
-              ) : (
+              { activeMenu === "svd" 
+              ? (<ServerDashboard />) 
+              : activeMenu === "cv" 
+              ? (<CVManager />) 
+              : activeMenu === "repo" 
+              ? ( <RepoManager />) 
+              : (
                 <ConversationManager />
               )}
             </div>
