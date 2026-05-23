@@ -1,1 +1,1 @@
-export type AdminMenuId = "svd" | "cv" | "repo" | "conv";
+export type AdminMenuId = "svd" | "cv" | "repo" | "conv" | "log";

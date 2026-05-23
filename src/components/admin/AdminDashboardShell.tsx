@@ -7,6 +7,7 @@ import { ConversationManager } from "@/components/admin/ConversationManager";
 import { CVManager } from "@/components/admin/CVManager";
 import { RepoManager } from "@/components/admin/RepoManager";
 import { ServerDashboard } from "@/components/admin/ServerDashboard";
+import { LogManager } from "@/components/admin/LogManager";
 import { Sidebar } from "@/components/admin/Sidebar";
 import { cn } from "@/lib/utils";
 import type { AdminMenuId } from "@/types/admin";
@@ -37,6 +38,8 @@ export function AdminDashboardShell() {
               ? (<CVManager />) 
               : activeMenu === "repo" 
               ? ( <RepoManager />) 
+              : activeMenu === "log" 
+              ? ( <LogManager />) 
               : (
                 <ConversationManager />
               )}
