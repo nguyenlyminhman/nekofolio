@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { login } from "@/services/authService";
+import sha256 from "sha256";
 
 export function LoginForm() {
   const router = useRouter();
@@ -57,7 +58,8 @@ export function LoginForm() {
     }
     setLoading(true);
     try {
-      const { accessToken, user } = await login({ username: u, password });
+      const _password = sha256(password);
+      const { accessToken, user } = await login({ username: u, password: _password });
       setSession(accessToken, user);
       toast({ title: "Đăng nhập thành công", description: user.nickname || user.email });
       router.replace(safeNext);
