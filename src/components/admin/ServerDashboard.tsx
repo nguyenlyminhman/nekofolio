@@ -101,7 +101,7 @@ export function ServerDashboard() {
   return (
     <div className="min-h-screen bg-[#090d16] p-4 text-slate-100 antialiased sm:p-6 md:p-8 selection:bg-cyan-500/30">
       {/* Background Decor */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+      <div className="bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_70%_10%,rgba(6,182,212,0.12),transparent_40%),radial-gradient(circle_at_15%_80%,rgba(99,102,241,0.08),transparent_40%)]" />
 
       <div className="relative z-10 mx-auto max-w-7xl space-y-8">
