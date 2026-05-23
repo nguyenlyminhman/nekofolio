@@ -15,9 +15,12 @@ import {
   TrendingUp,
   CheckCircle2,
   AlertTriangle,
-  X
+  X,
+  Loader2,
+  Download
 } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, Brush } from "recharts";
+import { Button } from "../ui/button";
 
 // Data giả lập lịch sử cho các card nhỏ
 const cpuHistory = [{ v: 30 }, { v: 45 }, { v: 35 }, { v: 60 }, { v: 42 }];
@@ -68,6 +71,7 @@ export function ServerDashboard() {
     appName: "",
     actionType: null,
   });
+  const [isBackupcribing, setIsBackupcribing] = useState(false);
 
   const ramPercent = Math.round((metrics.ramUsed / metrics.ramTotal) * 100);
   const diskPercent = Math.round((metrics.diskUsed / metrics.diskTotal) * 100);
@@ -84,7 +88,7 @@ export function ServerDashboard() {
   // Hàm xử lý khi người dùng nhấn "Confirm" trên Modal
   const handleConfirmAction = () => {
     const { appName, actionType } = confirmModal;
-    
+
     if (actionType === "restart") {
       console.log(`[PM2] Đang khởi động lại ứng dụng: ${appName}`);
       // Bạn có thể fetch API hoặc cập nhật state thực tế ở đây
@@ -98,6 +102,22 @@ export function ServerDashboard() {
     setConfirmModal({ isOpen: false, appName: "", actionType: null });
   };
 
+  const handleBackupAndDownload = async () => {
+    setIsBackupcribing(true);
+
+    try {
+      // Giả lập gọi API xuống BE xử lý pg_dump & upload S3 trong 2 giây
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+
+
+    } catch (error) {
+      console.error("Backup failed:", error);
+    } finally {
+      setIsBackupcribing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#090d16] text-slate-100 antialiased selection:bg-cyan-500/30">
       {/* Background Decor */}
@@ -105,7 +125,7 @@ export function ServerDashboard() {
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_70%_10%,rgba(6,182,212,0.12),transparent_40%),radial-gradient(circle_at_15%_80%,rgba(99,102,241,0.08),transparent_40%)]" />
 
       <div className="relative z-10 mx-auto">
-        
+
         {/* HEADER SECTION */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-800/60 pb-6">
           <div>
@@ -169,7 +189,7 @@ export function ServerDashboard() {
 
         {/* MAIN INTERFACE: CHARTS & APPS */}
         <div className="grid gap-6 lg:grid-cols-3">
-          
+
           {/* TRAFFIC & REQUESTS CHART WITH BRUSH */}
           <div className="lg:col-span-2 rounded-2xl border border-slate-800/80 bg-slate-900/40 p-6 shadow-xl backdrop-blur-md flex flex-col justify-between">
             <div className="mb-4 flex items-center justify-between">
@@ -192,20 +212,20 @@ export function ServerDashboard() {
                 <AreaChart data={trafficData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorRequests" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="time" stroke="#475569" fontSize={11} tickLine={false} />
                   <YAxis stroke="#475569" fontSize={11} tickLine={false} />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
                     itemStyle={{ color: '#e2e8f0' }}
                   />
                   <Area type="monotone" dataKey="requests" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorRequests)" />
-                  <Brush 
-                    dataKey="time" 
-                    height={22} 
+                  <Brush
+                    dataKey="time"
+                    height={22}
                     stroke="#334155"
                     fill="#0b0f19"
                     gap={10}
@@ -219,16 +239,42 @@ export function ServerDashboard() {
 
           {/* POSTGRESQL STATS */}
           <div className="rounded-2xl border border-slate-800/80 bg-slate-900/40 p-6 shadow-xl backdrop-blur-md">
-            <div className="mb-6 flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
-                <Database size={18} />
+            {/* Header Container: Đẩy button qua bên phải */}
+            <div className="mb-6 flex items-start justify-between gap-4">
+              {/* Khối bên trái: Icon + Tiêu đề */}
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                  <Database size={18} />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-slate-200">PostgreSQL Instance</h3>
+                  <p className="text-xs text-slate-400">Internal DB Health</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-semibold text-slate-200">PostgreSQL Instance</h3>
-                <p className="text-xs text-slate-400">Internal DB Health</p>
-              </div>
+
+              {/* Khối bên phải: Button đã được mang lên đây */}
+              <Button
+                onClick={handleBackupAndDownload}
+                disabled={isBackupcribing}
+                variant="outline"
+                size="sm"
+                className="gap-2 h-9 shrink-0" /* Thêm shrink-0 để nút không bị méo chữ khi màn hình nhỏ */
+              >
+                {isBackupcribing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Đang tạo backup...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Backup & Download
+                  </>
+                )}
+              </Button>
             </div>
 
+            {/* Phần thông tin bên dưới */}
             <div className="space-y-3">
               <InfoRow label="Cluster Status" value="Healthy" type="success" />
               <InfoRow label="Active Connections" value="12 / 100" />
@@ -273,11 +319,10 @@ export function ServerDashboard() {
                       <td className="py-4 text-slate-400 text-xs"><span className="bg-slate-800 px-2 py-0.5 rounded-md">{app.type}</span></td>
                       <td className="py-4 text-mono text-xs text-slate-400">{app.ports}</td>
                       <td className="py-4">
-                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border ${
-                          app.status === "online" 
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/10" 
-                            : "bg-rose-500/10 text-rose-400 border-rose-500/10"
-                        }`}>
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border ${app.status === "online"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/10"
+                          : "bg-rose-500/10 text-rose-400 border-rose-500/10"
+                          }`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${app.status === "online" ? "bg-emerald-400 animate-pulse" : "bg-rose-400"}`} />
                           {app.status}
                         </span>
@@ -287,18 +332,18 @@ export function ServerDashboard() {
                       <td className="py-4">
                         <div className="flex items-center justify-center gap-1">
                           {/* Nút Restart */}
-                          <button 
+                          <button
                             onClick={() => triggerAction(app.name, "restart")}
-                            title="Restart Process" 
+                            title="Restart Process"
                             className="p-1.5 rounded-lg text-slate-500 hover:text-cyan-400 hover:bg-slate-800 transition"
                           >
                             <RefreshCw size={13} />
                           </button>
                           {/* Nút Stop */}
-                          <button 
+                          <button
                             onClick={() => triggerAction(app.name, "stop")}
                             disabled={app.status === "stopped"}
-                            title="Stop Process" 
+                            title="Stop Process"
                             className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500"
                           >
                             <Square size={13} fill="currentColor" className="text-transparent hover:text-rose-400 group-disabled:hover:text-slate-500" />
@@ -320,15 +365,15 @@ export function ServerDashboard() {
       {confirmModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop tối mờ phía sau */}
-          <div 
+          <div
             className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
             onClick={() => setConfirmModal({ isOpen: false, appName: "", actionType: null })}
           />
-          
+
           {/* Khung nội dung Modal */}
           <div className="relative w-full max-w-md transform overflow-hidden rounded-2xl border border-slate-800 bg-[#0f172a] p-6 shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200">
             {/* Nút đóng góc phải */}
-            <button 
+            <button
               onClick={() => setConfirmModal({ isOpen: false, appName: "", actionType: null })}
               className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/50 transition"
             >
@@ -339,7 +384,7 @@ export function ServerDashboard() {
               <div className={`p-3 rounded-xl ${confirmModal.actionType === 'restart' ? 'bg-cyan-500/10 text-cyan-400' : 'bg-rose-500/10 text-rose-400'}`}>
                 <AlertTriangle size={24} />
               </div>
-              
+
               <div className="space-y-2">
                 <h3 className="text-lg font-bold text-white capitalize">
                   Confirm Process {confirmModal.actionType}
@@ -361,11 +406,10 @@ export function ServerDashboard() {
               </button>
               <button
                 onClick={handleConfirmAction}
-                className={`px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-lg transition duration-150 ${
-                  confirmModal.actionType === "restart"
-                    ? "bg-cyan-600 hover:bg-cyan-500 shadow-cyan-500/10"
-                    : "bg-rose-600 hover:bg-rose-500 shadow-rose-500/10"
-                }`}
+                className={`px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-lg transition duration-150 ${confirmModal.actionType === "restart"
+                  ? "bg-cyan-600 hover:bg-cyan-500 shadow-cyan-500/10"
+                  : "bg-rose-600 hover:bg-rose-500 shadow-rose-500/10"
+                  }`}
               >
                 Execute Action
               </button>
@@ -417,7 +461,7 @@ function MetricCard({
 
       <div className="mt-4 flex items-center justify-between gap-2 pt-2 border-t border-slate-800/40">
         <p className="text-xs text-slate-500 truncate">{subtext}</p>
-        
+
         {!isStatic && chartData && (
           <div className="h-8 w-20 opacity-70 group-hover:opacity-100 transition duration-300">
             <ResponsiveContainer width="100%" height="100%">
