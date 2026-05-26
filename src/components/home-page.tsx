@@ -12,10 +12,12 @@ import Footer from "@/components/Footer";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import CookieConsent from "@/components/CookieConsent";
 import PersonalProjects from "./PersonalProject";
+import PageLoader from "./PageLoader";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PageLoader />
       <Navbar />
       <main>
         <HeroSection />
