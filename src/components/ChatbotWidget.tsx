@@ -49,6 +49,7 @@ const ChatbotWidget = () => {
   const streamTimerRef = useRef<number | null>(null);
   const activeBotMessageIdRef = useRef<string | null>(null);
   const isStreamDoneRef = useRef(false);
+  const flushStreamBufferRef = useRef<() => void>(() => {});
 
   // ===============================
   // HELPERS
@@ -113,7 +114,7 @@ const ChatbotWidget = () => {
   );
 
   // ===============================
-  // STREAM
+  // STREAM (Đã sắp xếp lại thứ tự)
   // ===============================
 
   const finishStream = useCallback(() => {
@@ -133,6 +134,7 @@ const ChatbotWidget = () => {
     focusTextarea();
   }, [clearStreamTimer, closeSSE, focusTextarea]);
 
+  // Đưa hàm flushStreamBuffer lên trước để tránh lỗi Temporal Dead Zone (Hoisting)
   const flushStreamBuffer = useCallback(() => {
     const botMsgId = activeBotMessageIdRef.current;
 
@@ -167,7 +169,7 @@ const ChatbotWidget = () => {
 
     if (streamBufferRef.current.length > 0) {
       streamTimerRef.current = window.setTimeout(() => {
-        flushStreamBuffer();
+        flushStreamBufferRef.current();
       }, STREAM_FRAME_MS);
 
       return;
@@ -179,6 +181,11 @@ const ChatbotWidget = () => {
       finishStream();
     }
   }, [clearStreamTimer, finishStream, scrollToBottom]);
+
+  // Giữ ref luôn trỏ đến phiên bản mới nhất của flushStreamBuffer
+  useEffect(() => {
+    flushStreamBufferRef.current = flushStreamBuffer;
+  }, [flushStreamBuffer]);
 
   const enqueueStreamChunk = useCallback(
     (chunk: string) => {
@@ -362,17 +369,19 @@ const ChatbotWidget = () => {
   // EFFECTS
   // ===============================
 
+  // Open chat từ xa của card Personal Project
   useEffect(() => {
     const handleRemoteOpen = () => {
       setOpen(true);
-      setShowPing(false); // Tắt hiệu ứng ping thông báo nếu đã chủ động mở chat
+      setShowPing(false);
+      focusTextarea();
     };
 
     window.addEventListener("open-portfolio-chatbot", handleRemoteOpen);
     return () => {
       window.removeEventListener("open-portfolio-chatbot", handleRemoteOpen);
     };
-  }, []);
+  }, [focusTextarea]);
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -455,6 +464,12 @@ const ChatbotWidget = () => {
               className="relative flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg"
             >
               <Bot size={24} />
+              {showPing && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                </span>
+              )}
             </motion.button>
           )}
         </AnimatePresence>
