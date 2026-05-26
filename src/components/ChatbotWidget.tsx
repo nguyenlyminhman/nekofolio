@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, Send, X } from "lucide-react";
 import { useChatStore } from "@/stores";
+import Lottie from "lottie-react";
 
 type Message = {
   id: string;
@@ -50,6 +51,7 @@ const ChatbotWidget = () => {
   const activeBotMessageIdRef = useRef<string | null>(null);
   const isStreamDoneRef = useRef(false);
   const flushStreamBufferRef = useRef<() => void>(() => {});
+  const [animationData, setAnimationData] = useState<any>(null);
 
   // ===============================
   // HELPERS
@@ -186,6 +188,14 @@ const ChatbotWidget = () => {
   useEffect(() => {
     flushStreamBufferRef.current = flushStreamBuffer;
   }, [flushStreamBuffer]);
+  
+  // fetch con mèo =)))
+  useEffect(() => {
+  fetch("/dancing-cat.json")
+    .then((res) => res.json())
+    .then((data) => setAnimationData(data))
+    .catch((err) => console.error("Lỗi load lottie:", err));
+}, []);
 
   const enqueueStreamChunk = useCallback(
     (chunk: string) => {
@@ -461,15 +471,15 @@ const ChatbotWidget = () => {
                 damping: 22,
               }}
               onClick={handleOpen}
-              className="relative flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg"
+              className="relative flex h-24 w-24 items-center justify-center rounded-full text-primary-foreground shadow-lg"
             >
-              <Bot size={24} />
-              {showPing && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                </span>
-              )}
+              {showPing ? (
+  <div className="w-24 h-24 flex items-center justify-center overflow-hidden rounded-full">
+    <Lottie animationData={animationData} loop={true} />
+  </div>
+) : (
+  <Bot size={24} />
+)}
             </motion.button>
           )}
         </AnimatePresence>
