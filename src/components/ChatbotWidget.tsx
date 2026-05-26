@@ -500,8 +500,11 @@ const ChatbotWidget = () => {
             {/* Header */}
             <div className="flex items-center justify-between border-b px-4 py-3">
               <div className="flex items-center gap-2">
-                <Bot size={18} />
-                <span>{BOT_NAME}</span>
+                <Bot size={18} className="text-primary" strokeWidth={1.8} />
+                <p className="font-mono-accent flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-primary">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                    {isTyping ? "Typing…" : "Online"}
+                  </p>
               </div>
 
               <button onClick={() => {
