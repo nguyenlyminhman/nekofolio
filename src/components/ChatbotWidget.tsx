@@ -397,7 +397,7 @@ const ChatbotWidget = () => {
     const t = window.setTimeout(() => {
       setOpen(true);
       focusTextarea();
-    }, 3000);
+    }, 9000);
 
     fetchHistory().catch(console.error);
 
