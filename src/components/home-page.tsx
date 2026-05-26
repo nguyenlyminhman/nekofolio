@@ -11,6 +11,7 @@ import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import CookieConsent from "@/components/CookieConsent";
+import PersonalProjects from "./PersonalProject";
 
 export default function HomePage() {
   return (
@@ -23,6 +24,7 @@ export default function HomePage() {
         <ProjectsSection />
         <LeadershipSection />
         <AISection />
+        <PersonalProjects />
         <ContactSection />
       </main>
       <Footer />
