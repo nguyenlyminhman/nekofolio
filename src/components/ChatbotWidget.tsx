@@ -50,7 +50,7 @@ const ChatbotWidget = () => {
   const streamTimerRef = useRef<number | null>(null);
   const activeBotMessageIdRef = useRef<string | null>(null);
   const isStreamDoneRef = useRef(false);
-  const flushStreamBufferRef = useRef<() => void>(() => {});
+  const flushStreamBufferRef = useRef<() => void>(() => { });
   const [animationData, setAnimationData] = useState<any>(null);
 
   // ===============================
@@ -159,9 +159,9 @@ const ChatbotWidget = () => {
         prev.map((m) =>
           m.id === botMsgId
             ? {
-                ...m,
-                content: m.content + nextChunk,
-              }
+              ...m,
+              content: m.content + nextChunk,
+            }
             : m
         )
       );
@@ -188,14 +188,14 @@ const ChatbotWidget = () => {
   useEffect(() => {
     flushStreamBufferRef.current = flushStreamBuffer;
   }, [flushStreamBuffer]);
-  
+
   // fetch con mèo =)))
   useEffect(() => {
-  fetch("/dancing-cat.json")
-    .then((res) => res.json())
-    .then((data) => setAnimationData(data))
-    .catch((err) => console.error("Lỗi load lottie:", err));
-}, []);
+    fetch("/dancing-cat.json")
+      .then((res) => res.json())
+      .then((data) => setAnimationData(data))
+      .catch((err) => console.error("Lỗi load lottie:", err));
+  }, []);
 
   const enqueueStreamChunk = useCallback(
     (chunk: string) => {
@@ -256,13 +256,11 @@ const ChatbotWidget = () => {
           .find((row) => row.startsWith("sessionId="))
           ?.split("=")[1] ?? "";
 
-      const sseUrl = `${
-        process.env.NEXT_PUBLIC_API_URL
-      }/api/v1/chat/stream?message=${encodeURIComponent(userQuery)}${
-        sessionId
+      const sseUrl = `${process.env.NEXT_PUBLIC_API_URL
+        }/api/v1/chat/stream?message=${encodeURIComponent(userQuery)}${sessionId
           ? `&sessionId=${encodeURIComponent(sessionId)}`
           : ""
-      }`;
+        }`;
 
       const es = new EventSource(sseUrl, {
         withCredentials: true,
@@ -457,7 +455,7 @@ const ChatbotWidget = () => {
       `}</style>
 
       {/* Floating button */}
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-16 h-16 sm:w-28 sm:h-28 flex items-center justify-center">
         <AnimatePresence>
           {!open && (
             <motion.button
@@ -471,15 +469,15 @@ const ChatbotWidget = () => {
                 damping: 22,
               }}
               onClick={handleOpen}
-              className="relative flex h-24 w-24 items-center justify-center rounded-full text-primary-foreground shadow-lg"
+              className="relative flex w-16 h-16 sm:w-28 sm:h-28 items-center justify-center rounded-full text-primary-foreground shadow-lg"
             >
               {showPing ? (
-  <div className="w-24 h-24 flex items-center justify-center overflow-hidden rounded-full">
-    <Lottie animationData={animationData} loop={true} />
-  </div>
-) : (
-  <Bot size={24} />
-)}
+                <div className="w-16 h-16 sm:w-28 sm:h-28 flex items-center justify-center overflow-hidden rounded-full">
+                  <Lottie animationData={animationData} loop={true} />
+                </div>
+              ) : (
+                <Bot size={24} />
+              )}
             </motion.button>
           )}
         </AnimatePresence>
@@ -505,22 +503,23 @@ const ChatbotWidget = () => {
               y: 24,
               scale: 0.96,
             }}
-            className="fixed bottom-6 right-6 z-50 flex h-[540px] w-[380px] flex-col overflow-hidden rounded-2xl border bg-card"
+            // className="fixed bottom-6 right-6 z-50 flex h-[540px] w-[380px] flex-col overflow-hidden rounded-2xl border bg-card"
+            className="fixed inset-0 z-50 flex flex-col bg-card m-0 rounded-none sm:inset-auto sm:bottom-6 sm:right-6 sm:h-[540px] sm:w-[380px] sm:rounded-2xl sm:border overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b px-4 py-3">
               <div className="flex items-center gap-2">
                 <Bot size={18} className="text-primary" strokeWidth={1.8} />
                 <p className="font-mono-accent flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-primary">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                    {isTyping ? "Typing…" : "Online"}
-                  </p>
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  {isTyping ? "Typing…" : "Online"}
+                </p>
               </div>
 
               <button onClick={() => {
-                                      setOpen(false);
-                                      setShowPing(true); 
-                                    }}>
+                setOpen(false);
+                setShowPing(true);
+              }}>
                 <X size={16} />
               </button>
             </div>
@@ -547,18 +546,16 @@ const ChatbotWidget = () => {
                 return (
                   <div
                     key={m.id}
-                    className={`flex ${
-                      m.role === "hr"
+                    className={`flex ${m.role === "hr"
                         ? "justify-end"
                         : "justify-start"
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${
-                        m.role === "hr"
+                      className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${m.role === "hr"
                           ? "bg-primary text-primary-foreground"
                           : "bg-secondary"
-                      }`}
+                        }`}
                     >
                       {m.content}
 
