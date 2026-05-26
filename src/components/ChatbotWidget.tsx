@@ -504,7 +504,10 @@ const ChatbotWidget = () => {
                 <span>{BOT_NAME}</span>
               </div>
 
-              <button onClick={() => setOpen(false)}>
+              <button onClick={() => {
+                                      setOpen(false);
+                                      setShowPing(true); 
+                                    }}>
                 <X size={16} />
               </button>
             </div>
