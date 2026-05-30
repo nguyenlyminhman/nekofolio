@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, Send, X, Terminal } from "lucide-react";
 import { useChatStore } from "@/stores";
+import Lottie from "lottie-react";
+
 
 type Message = {
   id: string;
@@ -23,9 +25,20 @@ const STREAM_FRAME_MS = 16;
 const STREAM_CHARS_PER_FRAME = 4;
 
 const HologramNeko = ({ active = false }: { active?: boolean }) => {
+  const [animationData, setAnimationData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/dancing-cat.json")
+      .then((res) => res.json())
+      .then((data) => setAnimationData(data))
+      .catch((err) => console.error("Lỗi load lottie:", err));
+  }, []);
+
+
+
   return (
-    <div className="relative flex h-16 w-16 items-center justify-center sm:h-24 sm:w-24">
-      <motion.div
+    <div className="">
+      {/* <motion.div
         animate={{ rotate: 360 }}
         transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
         className="absolute inset-0 rounded-full border border-primary/20 border-t-primary/70"
@@ -39,9 +52,9 @@ const HologramNeko = ({ active = false }: { active?: boolean }) => {
         animate={{ scale: active ? [1, 1.08, 1] : [1, 1.04, 1], opacity: [0.5, 0.95, 0.5] }}
         transition={{ duration: active ? 0.9 : 2.4, repeat: Infinity }}
         className="absolute inset-3 rounded-full bg-primary/10 blur-md"
-      />
+      /> */}
 
-      <svg
+      {/* <svg
         viewBox="0 0 120 120"
         className="relative z-10 h-12 w-12 drop-shadow-[0_0_18px_hsl(var(--primary)/0.65)] sm:h-16 sm:w-16"
         fill="none"
@@ -92,7 +105,10 @@ const HologramNeko = ({ active = false }: { active?: boolean }) => {
           strokeLinecap="round"
           className="text-primary/30"
         />
-      </svg>
+      </svg> */}
+
+      <Lottie animationData={animationData} loop={true} />
+
     </div>
   );
 };
@@ -116,7 +132,7 @@ const ChatbotWidget = () => {
   const streamTimerRef = useRef<number | null>(null);
   const activeBotMessageIdRef = useRef<string | null>(null);
   const isStreamDoneRef = useRef(false);
-  const flushStreamBufferRef = useRef<() => void>(() => {});
+  const flushStreamBufferRef = useRef<() => void>(() => { });
 
   const focusTextarea = useCallback(() => {
     requestAnimationFrame(() => textareaRef.current?.focus());
@@ -241,9 +257,8 @@ const ChatbotWidget = () => {
           .find((row) => row.startsWith("sessionId="))
           ?.split("=")[1] ?? "";
 
-      const sseUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/stream?message=${encodeURIComponent(userQuery)}${
-        sessionId ? `&sessionId=${encodeURIComponent(sessionId)}` : ""
-      }`;
+      const sseUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/stream?message=${encodeURIComponent(userQuery)}${sessionId ? `&sessionId=${encodeURIComponent(sessionId)}` : ""
+        }`;
 
       const es = new EventSource(sseUrl, { withCredentials: true });
       eventSourceRef.current = es;
@@ -313,7 +328,7 @@ const ChatbotWidget = () => {
     const t = window.setTimeout(() => {
       setOpen(true);
       focusTextarea();
-    }, 9000);
+    }, 12000);
 
     fetchHistory().catch(console.error);
     return () => window.clearTimeout(t);
@@ -429,7 +444,8 @@ const ChatbotWidget = () => {
                 onClick={handleOpen}
                 whileHover={{ scale: 1.04, y: -2 }}
                 whileTap={{ scale: 0.96 }}
-                className="relative flex h-16 w-16 items-center justify-center rounded-full border border-primary/30 bg-background/80 text-primary shadow-[0_0_36px_hsl(var(--primary)/0.32)] backdrop-blur-xl sm:h-24 sm:w-24"
+                // className="relative flex h-16 w-16 items-center justify-center rounded-full border border-primary/30 bg-background/80 text-primary shadow-[0_0_36px_hsl(var(--primary)/0.32)] backdrop-blur-xl sm:h-24 sm:w-24"
+                className="relative flex h-16 w-16 items-center justify-center rounded-full text-primary backdrop-blur-xl sm:h-24 sm:w-24"
                 aria-label="Open Neko AI assistant"
               >
                 {showPing && (
@@ -496,9 +512,8 @@ const ChatbotWidget = () => {
                 return (
                   <div key={m.id} className={`flex ${m.role === "hr" ? "justify-end" : "justify-start"}`}>
                     <div
-                      className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
-                        m.role === "hr" ? "bg-primary text-primary-foreground" : "bg-secondary"
-                      }`}
+                      className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${m.role === "hr" ? "bg-primary text-primary-foreground" : "bg-secondary"
+                        }`}
                     >
                       {m.content}
                       {showCursor && (

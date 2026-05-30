@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import Lottie from "lottie-react";
 
 const bootLogs = [
   { tag: "OK", text: "Loading portfolio shell" },
@@ -21,14 +20,6 @@ export default function PageLoader() {
   const [visibleLogs, setVisibleLogs] = useState(1);
 
   const bootText = useMemo(() => "booting nekofolio.exe", []);
-  const [animationData, setAnimationData] = useState<any>(null);
-
-  useEffect(() => {
-    fetch("/dancing-cat.json")
-      .then((res) => res.json())
-      .then((data) => setAnimationData(data))
-      .catch((err) => console.error("Lỗi load lottie:", err));
-  }, []);
 
   useEffect(() => {
     const progressTimer = window.setInterval(() => {
@@ -36,15 +27,15 @@ export default function PageLoader() {
         if (prev >= 100) return 100;
         return Math.min(prev + Math.floor(Math.random() * 9) + 4, 100);
       });
-    }, 280);
+    }, 140);
 
     const logTimer = window.setInterval(() => {
       setVisibleLogs((prev) => Math.min(prev + 1, bootLogs.length));
-    }, 500);
+    }, 360);
 
     const exitTimer = window.setTimeout(() => {
       setLoading(false);
-    }, 5000);
+    }, 3200);
 
     return () => {
       window.clearInterval(progressTimer);
@@ -58,8 +49,8 @@ export default function PageLoader() {
       {loading && (
         <motion.div
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 0.02, filter: "blur(10px)" }}
-          transition={{ duration: 0.52, ease: "easeInOut" }}
+          exit={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+          transition={{ duration: 0.55, ease: "easeInOut" }}
           className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-[#020617] px-4 text-foreground"
         >
           <style>{`
@@ -116,19 +107,17 @@ export default function PageLoader() {
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ repeat: Infinity, duration: 14, ease: "linear" }}
-                  className="absolute h-40 w-40 border-cyan-300/20"
+                  className="absolute h-40 w-40 rounded-full border border-dashed border-cyan-300/20"
                 />
 
-                {/* <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-cyan-300/15 bg-cyan-300/5 shadow-[0_0_60px_rgba(34,211,238,0.12)]">
+                <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-cyan-300/15 bg-cyan-300/5 shadow-[0_0_60px_rgba(34,211,238,0.12)]">
                   <div className="absolute h-28 w-28 rounded-full border border-purple-300/15" />
                   <div className="font-mono text-lg leading-7 text-cyan-200 drop-shadow-[0_0_14px_rgba(34,211,238,0.55)]" style={{ animation: "nekoFloat 2.6s ease-in-out infinite" }}>
                     {asciiNeko.map((line) => (
                       <div key={line}>{line}</div>
                     ))}
                   </div>
-                </div> */}
-                
-                <Lottie className="h-50 w-50" animationData={animationData} loop={true} />
+                </div>
 
                 <div className="mt-5 rounded-full border border-cyan-300/15 bg-cyan-300/5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.24em] text-cyan-200">
                   ai assistant online
@@ -182,7 +171,7 @@ export default function PageLoader() {
 
                 <div className="mt-5 rounded-xl border border-purple-400/15 bg-purple-400/5 px-4 py-3 font-mono text-[11px] text-purple-100/85">
                   STATUS: <span className="text-cyan-200">READY TO FLEX</span>
-                  <span className="text-slate-500">  {"// professional mode, but make it fun"} </span>
+                  <span className="text-slate-500">  {"// professional mode, but make it fun"}</span>
                 </div>
               </div>
             </div>
