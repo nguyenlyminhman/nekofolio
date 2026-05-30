@@ -1,121 +1,215 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MessageSquareCode } from "lucide-react"; // Đổi sang MessageSquareCode nhìn hợp với widget chat hơn
+import {
+  Bot,
+  BrainCircuit,
+  DatabaseZap,
+  MessageSquareCode,
+  Radio,
+  ShieldCheck,
+  Sparkles,
+  TerminalSquare,
+} from "lucide-react";
 
 const personalProjects = [
   {
     name: "AI-Powered Portfolio Chatbot",
-    description: "A smart, interactive chatbot integrated into my Live Portfolio Website, specifically designed to assist HR/recruiters in querying candidate information, professional experience, and technical skills in real-time.",
-    tech: ["Node.js (NestJS)", "Server Sent Event (SSE)", "Socket.io", "Next.js", "Google Generative AI", "Model Context Protocol (MCP)", "PostgreSQL"],
-    contributions: [
-      "Designed and implemented the chatbot backend using NestJS and PostgreSQL to manage session states and conversation history.",
-      "Integrated Google Generative AI (Gemini API) using the Model Context Protocol (MCP) to securely and accurately expose portfolio data (CV details, project highlights) as tools for the LLM.",
-      "Built a clean, responsive frontend chat interface using Next.js, allowing seamless user interaction and smooth streaming responses.",
-      "Optimized prompt engineering and context retrieval to ensure the bot answers recruiting-related questions accurately while maintaining professional boundaries."
+    tagline: "Recruiter-facing AI assistant for my live portfolio.",
+    description:
+      "A smart, interactive chatbot integrated into my Live Portfolio Website, designed to help HR and recruiters explore candidate information, professional experience, technical skills, and project highlights in real time.",
+    tech: [
+      "NestJS",
+      "SSE",
+      "Socket.io",
+      "Next.js",
+      "Gemini API",
+      "MCP",
+      "PostgreSQL",
     ],
-  }
+    contributions: [
+      {
+        title: "Session-aware backend",
+        desc: "Built NestJS services with PostgreSQL persistence for session state, message history, and recruiter conversations.",
+        icon: DatabaseZap,
+      },
+      {
+        title: "MCP tool layer",
+        desc: "Exposed CV details and project data to the LLM through Model Context Protocol tools with controlled context access.",
+        icon: BrainCircuit,
+      },
+      {
+        title: "Streaming UX",
+        desc: "Designed a responsive Next.js chat UI with smooth real-time streaming responses and a lightweight interaction flow.",
+        icon: Radio,
+      },
+      {
+        title: "Prompt safety",
+        desc: "Optimized prompts, boundaries, and context retrieval so the assistant answers professionally without hallucinating.",
+        icon: ShieldCheck,
+      },
+    ],
+  },
+];
+
+const metrics = [
+  { value: "01", label: "Live AI product" },
+  { value: "MCP", label: "Tool-based context" },
+  { value: "SSE", label: "Streaming response" },
 ];
 
 const PersonalProjects = () => {
   const handleOpenChatbot = () => {
-    // Phát Event thông báo kích hoạt Chatbot mở ra
     const event = new CustomEvent("open-portfolio-chatbot");
     window.dispatchEvent(event);
   };
 
   return (
-    <section id="personal-projects" className="py-20 sm:py-28">
-      <div className="section-container">
-        {/* Header Section */}
+    <section id="personal-projects" className="relative overflow-hidden py-24 sm:py-32">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:58px_58px]" />
+        <div className="absolute left-[-12%] top-20 h-72 w-72 rounded-full bg-cyan-500/10 blur-[120px]" />
+        <div className="absolute right-[-10%] bottom-10 h-80 w-80 rounded-full bg-purple-500/10 blur-[130px]" />
+      </div>
+
+      <div className="section-container relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.6 }}
+          className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
         >
-          <p className="font-mono-accent text-sm text-primary mb-3 tracking-widest uppercase">
-            Personal Work
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Side Projects.
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mb-12">
-            Putting new concepts into practice. Building production-grade tools and experimenting with AI ecosystem tools.
-          </p>
+          <div>
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2">
+              <Sparkles size={14} className="text-primary" />
+              <span className="font-mono-accent text-xs uppercase tracking-[0.28em] text-primary">
+                Personal Lab
+              </span>
+            </div>
+            <h2 className="max-w-3xl text-3xl font-black tracking-tight sm:text-5xl">
+              Building AI products, not just demos.
+            </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+              Side projects where backend architecture, AI tooling, realtime UX, and production deployment meet.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleOpenChatbot}
+            className="group inline-flex w-fit items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-5 py-3 font-mono-accent text-xs font-semibold uppercase tracking-wider text-primary transition-all hover:-translate-y-1 hover:border-primary/60 hover:bg-primary/15 hover:shadow-[0_0_35px_rgba(34,211,238,0.18)]"
+          >
+            <MessageSquareCode size={16} />
+            Ask Neko
+            <span className="transition-transform group-hover:translate-x-1">→</span>
+          </button>
         </motion.div>
 
-        {/* Project Card */}
-        <div className="grid gap-6">
-          {personalProjects.map((project, idx) => (
-            <motion.div
-              key={project.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.4, delay: idx * 0.1 }}
-              className="glass-card p-6 md:p-8 card-hover flex flex-col relative overflow-hidden"
-            >
-              {/* Header inside card: Title, Icon & Trigger Button */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
-                    <MessageSquareCode size={20} strokeWidth={1.5} />
+        {personalProjects.map((project, idx) => (
+          <motion.div
+            key={project.name}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.5, delay: idx * 0.08 }}
+            className="relative overflow-hidden rounded-[2rem] border border-border/50 bg-card/40 p-5 shadow-2xl backdrop-blur-xl sm:p-8"
+          >
+            <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-primary/10 blur-[110px]" />
+            <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-purple-500/10 blur-[110px]" />
+
+            <div className="relative grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+              <div>
+                <div className="mb-6 flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
+                    <Bot size={24} />
                   </div>
-                  <h3 className="text-xl font-semibold">{project.name}</h3>
+                  <div>
+                    <p className="font-mono-accent text-xs uppercase tracking-[0.22em] text-primary/70">
+                      {project.tagline}
+                    </p>
+                    <h3 className="mt-1 text-2xl font-bold">{project.name}</h3>
+                  </div>
                 </div>
-                
-                <button 
-                  onClick={handleOpenChatbot}
-                  className="inline-flex items-center gap-1.5 text-xs font-mono-accent text-primary hover:underline self-start sm:self-center cursor-pointer group/btn"
-                >
-                  <span>Ask Neko about this</span>
-                  <svg 
-                    className="w-3.5 h-3.5 transform group-hover/btn:-translate-y-0.5 group-hover/btn:translate-x-0.5 transition-transform" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </button>
-              </div>
 
-              {/* Main Project Description */}
-              <p className="text-sm text-muted-foreground leading-relaxed mb-6 max-w-4xl">
-                {project.description}
-              </p>
-
-              {/* Key Contributions Breakdown */}
-              <div className="mb-6">
-                <p className="text-xs font-mono-accent text-primary/70 uppercase tracking-wider mb-3">
-                  Key Implementations
+                <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                  {project.description}
                 </p>
-                <ul className="space-y-2">
-                  {project.contributions.map((contribution, index) => (
-                    <li key={index} className="text-xs text-muted-foreground flex items-start gap-2.5 leading-relaxed">
-                      <span className="text-primary mt-0.5 select-none">▸</span>
-                      <span>{contribution}</span>
-                    </li>
+
+                <div className="mt-8 grid grid-cols-3 gap-3">
+                  {metrics.map((metric) => (
+                    <div
+                      key={metric.label}
+                      className="rounded-2xl border border-border/50 bg-background/40 p-4"
+                    >
+                      <p className="font-mono-accent text-xl font-black text-primary">
+                        {metric.value}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {metric.label}
+                      </p>
+                    </div>
                   ))}
-                </ul>
+                </div>
+
+                <div className="mt-8 flex flex-wrap gap-2">
+                  {project.tech.map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-full border border-primary/15 bg-primary/5 px-3 py-1.5 font-mono-accent text-[10px] font-medium text-primary"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
               </div>
 
-              {/* Tech Badges Stack */}
-              <div className="flex flex-wrap gap-1.5 pt-4 border-t border-primary/5">
-                {project.tech.map((t) => (
-                  <span
-                    key={t}
-                    className="px-2 py-1 text-[10px] rounded bg-primary/10 text-primary font-mono-accent font-medium"
-                  >
-                    {t}
-                  </span>
-                ))}
+              <div className="rounded-3xl border border-border/50 bg-background/50 backdrop-blur-xl">
+                <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="h-3 w-3 rounded-full bg-red-500" />
+                    <span className="h-3 w-3 rounded-full bg-yellow-500" />
+                    <span className="h-3 w-3 rounded-full bg-green-500" />
+                  </div>
+                  <div className="flex items-center gap-2 font-mono-accent text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <TerminalSquare size={13} />
+                    project.pipeline
+                  </div>
+                </div>
+
+                <div className="space-y-3 p-4">
+                  {project.contributions.map((item, index) => (
+                    <motion.div
+                      key={item.title}
+                      initial={{ opacity: 0, x: 16 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.35, delay: 0.1 + index * 0.06 }}
+                      className="group rounded-2xl border border-border/40 bg-card/40 p-4 transition-all hover:border-primary/35 hover:bg-primary/[0.04]"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                          <item.icon size={17} />
+                        </div>
+                        <div>
+                          <div className="mb-1 flex items-center gap-2">
+                            <span className="font-mono-accent text-[10px] text-primary/70">
+                              0{index + 1}
+                            </span>
+                            <h4 className="text-sm font-semibold">{item.title}</h4>
+                          </div>
+                          <p className="text-xs leading-relaxed text-muted-foreground">
+                            {item.desc}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-              
-            </motion.div>
-          ))}
-        </div>
+            </div>
+          </motion.div>
+        ))}
       </div>
     </section>
   );

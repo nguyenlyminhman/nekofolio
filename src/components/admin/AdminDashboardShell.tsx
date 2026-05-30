@@ -11,6 +11,7 @@ import { LogManager } from "@/components/admin/LogManager";
 import { Sidebar } from "@/components/admin/Sidebar";
 import { cn } from "@/lib/utils";
 import type { AdminMenuId } from "@/types/admin";
+import { ServerDash } from "./Dashboard";
 
 export function AdminDashboardShell() {
   const [activeMenu, setActiveMenu] = useState<AdminMenuId>("svd");

@@ -17,7 +17,11 @@ import {
   AlertTriangle,
   X,
   Loader2,
-  Download
+  Download,
+  MessageSquare,
+  Users,
+  FolderGit2,
+  FileText
 } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, Brush } from "recharts";
 import { Button } from "../ui/button";
@@ -151,9 +155,55 @@ export function ServerDashboard() {
             </button>
           </div>
         </div>
+        {/*  */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Card Số lượng CV */}
+          <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-between shadow-sm">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tổng Số CV</p>
+              <p className="text-2xl font-bold">128</p>
+            </div>
+            <div className="p-2.5 bg-blue-500/10 rounded-lg text-blue-500">
+              <FileText className="h-5 w-5" />
+            </div>
+          </div>
+
+          {/* Card Số lượng Repo */}
+          <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-between shadow-sm">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Repositories</p>
+              <p className="text-2xl font-bold">45</p>
+            </div>
+            <div className="p-2.5 bg-purple-500/10 rounded-lg text-purple-500">
+              <FolderGit2 className="h-5 w-5" />
+            </div>
+          </div>
+
+          {/* Card Truy cập hôm nay */}
+          <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-between shadow-sm">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Truy Cập Hôm Nay</p>
+              <p className="text-2xl font-bold">1,420</p>
+            </div>
+            <div className="p-2.5 bg-emerald-500/10 rounded-lg text-emerald-500">
+              <Users className="h-5 w-5" />
+            </div>
+          </div>
+
+          {/* Card Tỷ lệ chuyển đổi nhắn tin */}
+          <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-between shadow-sm">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tỷ Lệ Nhắn Tin</p>
+              <p className="text-2xl font-bold">32.4%</p>
+            </div>
+            <div className="p-2.5 bg-amber-500/10 rounded-lg text-amber-500">
+              <MessageSquare className="h-5 w-5" />
+            </div>
+          </div>
+        </div>
 
         {/* METRICS CARDS GRID */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 pb-5">
           <MetricCard
             icon={<Cpu size={20} />}
             title="CPU Load"
