@@ -471,13 +471,26 @@ const ChatbotWidget = () => {
               onClick={handleOpen}
               className="relative flex w-16 h-16 sm:w-28 sm:h-28 items-center justify-center rounded-full text-primary-foreground shadow-lg"
             >
-              {showPing ? (
-                <div className="w-16 h-16 sm:w-28 sm:h-28 flex items-center justify-center overflow-hidden rounded-full">
-                  <Lottie animationData={animationData} loop={true} />
+              <div className="relative group flex items-center justify-center">
+                {showPing ? (
+                  <div className="w-16 h-16 sm:w-28 sm:h-28 flex items-center justify-center overflow-hidden rounded-full cursor-pointer">
+                    <Lottie animationData={animationData} loop={true} />
+                  </div>
+                ) : (
+                  <div className="p-2 rounded-full hover:bg-neutral-800 transition-colors cursor-pointer">
+                    <Bot size={24} />
+                  </div>
+                )}
+
+                {/* Tooltip xuất hiện khi hover */}
+                <div className="absolute bottom-full right-0 mb-2 hidden group-hover:flex flex-col items-end pointer-events-none z-50">
+                  <span className="relative whitespace-nowrap rounded-md bg-neutral-950 px-3.5 py-2 text-sm font-medium text-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.15)] border border-cyan-500/30 context-font tracking-wide">
+                    Ask Neko anything about my experience! 🤖✨
+                  </span>
+                  {/* Mũi tên nhỏ - dịch sang phải (mr-5) để chỉ chuẩn vào vị trí Bot */}
+                  <div className="w-2 h-2 bg-neutral-950 border-r border-b border-cyan-500/30 rotate-45 -mt-1 mr-5 sm:mr-12"></div>
                 </div>
-              ) : (
-                <Bot size={24} />
-              )}
+              </div>
             </motion.button>
           )}
         </AnimatePresence>
@@ -547,14 +560,14 @@ const ChatbotWidget = () => {
                   <div
                     key={m.id}
                     className={`flex ${m.role === "hr"
-                        ? "justify-end"
-                        : "justify-start"
+                      ? "justify-end"
+                      : "justify-start"
                       }`}
                   >
                     <div
                       className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${m.role === "hr"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary"
                         }`}
                     >
                       {m.content}
