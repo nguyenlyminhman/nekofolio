@@ -484,11 +484,23 @@ const ChatbotWidget = () => {
 
                 {/* Tooltip xuất hiện khi hover */}
                 <div className="absolute bottom-full right-0 mb-2 hidden group-hover:flex flex-col items-end pointer-events-none z-50">
-                  <span className="relative whitespace-nowrap rounded-md bg-neutral-950 px-3.5 py-2 text-sm font-medium text-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.15)] border border-cyan-500/30 context-font tracking-wide">
+                  {/* Thân Tooltip: Đồng bộ hoàn toàn background, border và text màu primary */}
+                  <span className="relative whitespace-nowrap rounded-md px-3.5 py-2 text-sm font-medium backdrop-blur-sm tracking-wide shadow-[0_4px_20px_-4px_hsl(var(--glow)/0.15)] context-font"
+                    style={{
+                      background: 'hsl(var(--glass))',
+                      border: '0.5px solid hsl(var(--primary) / 0.3)',
+                      color: 'hsl(var(--primary))'
+                    }}>
                     Ask Neko anything about my experience! 🤖✨
                   </span>
-                  {/* Mũi tên nhỏ - dịch sang phải (mr-5) để chỉ chuẩn vào vị trí Bot */}
-                  <div className="w-2 h-2 bg-neutral-950 border-r border-b border-cyan-500/30 rotate-45 -mt-1 mr-5 sm:mr-12"></div>
+
+                  {/* Mũi tên nhỏ: Sử dụng background glass và border đồng bộ */}
+                  <div className="w-2 h-2 rotate-45 -mt-1 mr-5 sm:mr-12 border-r border-b"
+                    style={{
+                      background: 'hsl(var(--glass))',
+                      borderColor: 'hsl(var(--primary) / 0.3)'
+                    }}>
+                  </div>
                 </div>
               </div>
             </motion.button>
